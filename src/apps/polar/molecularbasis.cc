@@ -31,7 +31,7 @@
   $Id$
 */
 
-#include <moldft/molecularbasis.h>
+#include <polar/molecularbasis.h>
 
 
 std::ostream& operator<<(std::ostream& s, const ContractedGaussianShell& c) {

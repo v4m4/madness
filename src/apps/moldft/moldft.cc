@@ -37,7 +37,9 @@
 /// \defgroup moldft The molecular density funcitonal and Hartree-Fock code
 
 
-#include <moldft/moldft.h>
+#include <chem/SCF.h>
+
+using namespace madness;
 
 int main(int argc, char** argv) {
     TAU_START("main()");
@@ -66,7 +68,7 @@ int main(int argc, char** argv) {
             }
         }
         if (world.rank() == 0) print(inpname);
-        Calculation calc(world, inpname);
+        SCF calc(world, inpname);
 
         // Warm and fuzzy for the user
         if (world.rank() == 0) {

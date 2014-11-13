@@ -36,9 +36,9 @@
 /// \file moldft/potentialmanager.h
 /// \brief Declaration of molecule related classes and functions
 
-#include <moldft/corepotential.h>
-#include <moldft/atomutil.h>
-#include <world/array.h>
+#include <polar/corepotential.h>
+#include <polar/atomutil.h>
+#include <madness/world/array.h>
 #include <vector>
 #include <string>
 #include <iostream>
@@ -47,8 +47,8 @@
 #include <algorithm>
 #include <ctype.h>
 #include <cmath>
-#include <tensor/tensor.h>
-#include <misc/misc.h>
+#include <madness/tensor/tensor.h>
+#include <madness/misc/misc.h>
 
 class MolecularPotentialFunctor : public FunctionFunctorInterface<double,3> {
 private:

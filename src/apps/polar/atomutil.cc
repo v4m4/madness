@@ -32,9 +32,9 @@
   $Id$
 */
 
-#include <constants.h>
-#include <moldft/atomutil.h>
-#include <misc/misc.h>
+#include <madness/constants.h>
+#include <polar/atomutil.h>
+#include <madness/misc/misc.h>
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

@@ -37,30 +37,20 @@
 /// \defgroup moldft The molecular density funcitonal and Hartree-Fock code
 
 #define WORLD_INSTANTIATE_STATIC_TEMPLATES
-#include <mra/mra.h>
-#include <mra/lbdeux.h>
-#include <mra/qmprop.h>
+#include <madness/mra/mra.h>
 
-#include <misc/misc.h>
-#include <misc/ran.h>
+#include <madness/tensor/solvers.h>
+#include <madness/tensor/distributed_matrix.h>
 
-#include <tensor/systolic.h>
-#include <linalg/solvers.h>
-#include <linalg/elem.h>
-
-#include <ctime>
-#include <list>
-
-#include <TAU.h>
+#include <madness/TAU.h>
 using namespace madness;
 
+#include <polar/molecule.h>
+#include <polar/molecularbasis.h>
+#include <polar/corepotential.h>
+#include <polar/xcfunctional.h>
 
-#include <moldft/molecule.h>
-#include <moldft/molecularbasis.h>
-#include <moldft/corepotential.h>
-#include <moldft/xcfunctional.h>
-
-#include <moldft/potentialmanager.h>
+#include <polar/potentialmanager.h>
 
 
 //#include <jacob/abinitdftsolventsolver.h>
@@ -3407,73 +3397,73 @@ struct Calculation {
         bmo_mp = bmo_new;
     }
 
-//    template <typename Func>
-//    void propagate(World& world, const Func& Vext, int step0)
-    void propagate(World& world, double omega, int step0)
-    {
-      // Load molecular orbitals
-      set_protocol(world,1e-4);
-      make_nuclear_potential(world);
-      initial_load_bal(world);
-      load_mos(world);
-
-      int nstep = 1000;
-      double time_step = 0.05;
-
-      double strength = 0.1;
-
-      // temporary way of doing this for now
-//      VextCosFunctor<double> Vext(world,new DipoleFunctor(2),omega);
-      functionT fdipx = factoryT(world).functor(functorT(new DipoleFunctor(0))).initial_level(4);
-      functionT fdipy = factoryT(world).functor(functorT(new DipoleFunctor(1))).initial_level(4);
-      functionT fdipz = factoryT(world).functor(functorT(new DipoleFunctor(2))).initial_level(4);
-
-      world.gop.broadcast(time_step);
-      world.gop.broadcast(nstep);
-
-      // Need complex orbitals :(
-      double thresh = 1e-4;
-      cvecfuncT camo = zero_functions<double_complex,3>(world, param.nalpha);
-      cvecfuncT cbmo = zero_functions<double_complex,3>(world, param.nbeta);
-      for (int iorb = 0; iorb < param.nalpha; iorb++)
-      {
-        camo[iorb] = std::exp(double_complex(0.0,2*constants::pi*strength))*amo[iorb];
-        camo[iorb].truncate(thresh);
-      }
-      if (!param.spin_restricted && param.nbeta) {
-        for (int iorb = 0; iorb < param.nbeta; iorb++)
-        {
-          cbmo[iorb] = std::exp(double_complex(0.0,2*constants::pi*strength))*bmo[iorb];
-          cbmo[iorb].truncate(thresh);
-        }
-      }
-
-      // Create free particle propagator
-      // Have no idea what to set "c" to
-      double c = 20.0;
-      printf("Creating G\n");
-      Convolution1D<double_complex>* G = qm_1d_free_particle_propagator(FunctionDefaults<3>::get_k(), c, 0.5*time_step, 2.0*param.L);
-      printf("Done creating G\n");
-
-      // Start iteration over time
-      for (int step = 0; step < nstep; step++)
-      {
-//        if (world.rank() == 0) printf("Iterating step %d:\n\n", step);
-        double t = time_step*step;
-//        iterate_trotter(world, G, Vext, camo, cbmo, t, time_step);
-        iterate_trotter(world, G, camo, cbmo, t, time_step, thresh);
-        functionT arho = make_density(world,aocc,camo);
-        functionT brho = (!param.spin_restricted && param.nbeta) ?
-            make_density(world,aocc,camo) : copy(arho);
-        functionT rho = arho + brho;
-        double xval = inner(fdipx,rho);
-        double yval = inner(fdipy,rho);
-        double zval = inner(fdipz,rho);
-        if (world.rank() == 0) printf("%15.7f%15.7f%15.7f%15.7f\n", t, xval, yval, zval);
-      }
-
-
-    }
+//vama1//    template <typename Func>
+//vama1//    void propagate(World& world, const Func& Vext, int step0)
+//vama1    void propagate(World& world, double omega, int step0)
+//vama1    {
+//vama1      // Load molecular orbitals
+//vama1      set_protocol(world,1e-4);
+//vama1      make_nuclear_potential(world);
+//vama1      initial_load_bal(world);
+//vama1      load_mos(world);
+//vama1
+//vama1      int nstep = 1000;
+//vama1      double time_step = 0.05;
+//vama1
+//vama1      double strength = 0.1;
+//vama1
+//vama1      // temporary way of doing this for now
+//vama1//      VextCosFunctor<double> Vext(world,new DipoleFunctor(2),omega);
+//vama1      functionT fdipx = factoryT(world).functor(functorT(new DipoleFunctor(0))).initial_level(4);
+//vama1      functionT fdipy = factoryT(world).functor(functorT(new DipoleFunctor(1))).initial_level(4);
+//vama1      functionT fdipz = factoryT(world).functor(functorT(new DipoleFunctor(2))).initial_level(4);
+//vama1
+//vama1      world.gop.broadcast(time_step);
+//vama1      world.gop.broadcast(nstep);
+//vama1
+//vama1      // Need complex orbitals :(
+//vama1      double thresh = 1e-4;
+//vama1      cvecfuncT camo = zero_functions<double_complex,3>(world, param.nalpha);
+//vama1      cvecfuncT cbmo = zero_functions<double_complex,3>(world, param.nbeta);
+//vama1      for (int iorb = 0; iorb < param.nalpha; iorb++)
+//vama1      {
+//vama1        camo[iorb] = std::exp(double_complex(0.0,2*constants::pi*strength))*amo[iorb];
+//vama1        camo[iorb].truncate(thresh);
+//vama1      }
+//vama1      if (!param.spin_restricted && param.nbeta) {
+//vama1        for (int iorb = 0; iorb < param.nbeta; iorb++)
+//vama1        {
+//vama1          cbmo[iorb] = std::exp(double_complex(0.0,2*constants::pi*strength))*bmo[iorb];
+//vama1          cbmo[iorb].truncate(thresh);
+//vama1        }
+//vama1      }
+//vama1
+//vama1      // Create free particle propagator
+//vama1      // Have no idea what to set "c" to
+//vama1      double c = 20.0;
+//vama1      printf("Creating G\n");
+//vama1      Convolution1D<double_complex>* G = qm_1d_free_particle_propagator(FunctionDefaults<3>::get_k(), c, 0.5*time_step, 2.0*param.L);
+//vama1      printf("Done creating G\n");
+//vama1
+//vama1      // Start iteration over time
+//vama1      for (int step = 0; step < nstep; step++)
+//vama1      {
+//vama1//        if (world.rank() == 0) printf("Iterating step %d:\n\n", step);
+//vama1        double t = time_step*step;
+//vama1//        iterate_trotter(world, G, Vext, camo, cbmo, t, time_step);
+//vama1        iterate_trotter(world, G, camo, cbmo, t, time_step, thresh);
+//vama1        functionT arho = make_density(world,aocc,camo);
+//vama1        functionT brho = (!param.spin_restricted && param.nbeta) ?
+//vama1            make_density(world,aocc,camo) : copy(arho);
+//vama1        functionT rho = arho + brho;
+//vama1        double xval = inner(fdipx,rho);
+//vama1        double yval = inner(fdipy,rho);
+//vama1        double zval = inner(fdipz,rho);
+//vama1        if (world.rank() == 0) printf("%15.7f%15.7f%15.7f%15.7f\n", t, xval, yval, zval);
+//vama1      }
+//vama1
+//vama1
+//vama1    }
 
     complex_functionT APPLY(const complex_operatorT* q1d, const complex_functionT& psi) {
         complex_functionT r = psi;  // Shallow copy violates constness !!!!!!!!!!!!!!!!!
@@ -5714,12 +5704,12 @@ int main(int argc, char** argv) {
                 geom.set_hessian(h);
                 geom.optimize(geomcoord);
             }
-            else if (calc.param.tdksprop) {
-                print("\n\n Propagation of Kohn-Sham equation                      ");
-                print(" ----------------------------------------------------------\n");
-                //          calc.propagate(world,VextCosFunctor<double>(world,new DipoleFunctor(2),0.1),0);
-                calc.propagate(world,0.1,0);
-            }
+//vama1            else if (calc.param.tdksprop) {
+//vama1                print("\n\n Propagation of Kohn-Sham equation                      ");
+//vama1                print(" ----------------------------------------------------------\n");
+//vama1                //          calc.propagate(world,VextCosFunctor<double>(world,new DipoleFunctor(2),0.1),0);
+//vama1                calc.propagate(world,0.1,0);
+//vama1            }
             else {
                 MolecularEnergy E(world, calc);
                 E.value(calc.molecule.get_all_coords().flat()); // ugh!

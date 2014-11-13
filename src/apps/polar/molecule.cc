@@ -36,13 +36,13 @@
 /// \file moldft/molecule.cc
 /// \brief Simple management of molecular information and potential
 
-#include <TAU.h>
-#include <tensor/tensor.h>
-#include <linalg/tensor_lapack.h>
-#include <constants.h>
-#include <moldft/molecule.h>
-#include <moldft/atomutil.h>
-#include <misc/misc.h>
+#include <madness/TAU.h>
+#include <madness/tensor/tensor.h>
+#include <madness/tensor/tensor_lapack.h>
+#include <madness/constants.h>
+#include <polar/molecule.h>
+#include <polar/atomutil.h>
+#include <madness/misc/misc.h>
 #include <iomanip>
 #include <set>
 
