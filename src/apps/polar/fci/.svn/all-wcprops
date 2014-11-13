@@ -1,0 +1,395 @@
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/2419/local/trunk/src/apps/moldft/fci
+END
+fci_prspnad.F
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_prspnad.F
+END
+ddot.F
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/ddot.F
+END
+fci_hv.F
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_hv.F
+END
+fci_mgraph.F
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_mgraph.F
+END
+fci_prntri.F
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_prntri.F
+END
+GNUmakefile
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/2419/local/trunk/src/apps/moldft/fci/GNUmakefile
+END
+fci_detwalk.F
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_detwalk.F
+END
+fci_spnfrc.F
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_spnfrc.F
+END
+fci_make_eaj.F
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_make_eaj.F
+END
+fci_num.F
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_num.F
+END
+fci_output.F
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_output.F
+END
+fci_setup.F
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_setup.F
+END
+fci_2pdm.F
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_2pdm.F
+END
+daxpy.F
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/daxpy.F
+END
+fci_mfndoc.F
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_mfndoc.F
+END
+dgemm.F
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/dgemm.F
+END
+fci_couple2.F
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_couple2.F
+END
+fciparam.fh
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fciparam.fh
+END
+rsg.f
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/rsg.f
+END
+fci_prvec.F
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/2419/local/trunk/src/apps/moldft/fci/fci_prvec.F
+END
+fci_load.F
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_load.F
+END
+fci_onepdm.F
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_onepdm.F
+END
+fci_diags.F
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_diags.F
+END
+fci_err.F
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_err.F
+END
+output
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/output
+END
+fci_ifill.F
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_ifill.F
+END
+fci_sigma.F
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_sigma.F
+END
+fci_ofndwt.F
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_ofndwt.F
+END
+fci_onelcc.F
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_onelcc.F
+END
+fci_3pdm.F
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_3pdm.F
+END
+fcitime.fh
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fcitime.fh
+END
+ieor.c
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/ieor.c
+END
+fci_intchk.F
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_intchk.F
+END
+fci_ograph.F
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_ograph.F
+END
+renorm.F
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/renorm.F
+END
+idamax.F
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/idamax.F
+END
+fci_cntone.F
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_cntone.F
+END
+fci_tinit.F
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_tinit.F
+END
+bitops.fh
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/bitops.fh
+END
+fci_owalk_info.F
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_owalk_info.F
+END
+h2otest.dat
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/2419/local/trunk/src/apps/moldft/fci/h2otest.dat
+END
+dcopy.F
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/dcopy.F
+END
+timer.f
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/timer.f
+END
+fciinfo.fh
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fciinfo.fh
+END
+dscal.F
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/dscal.F
+END
+fci_spnad.F
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_spnad.F
+END
+fci_ofndoc.F
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_ofndoc.F
+END
+fci_couple1.F
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_couple1.F
+END
+fci_prteop.F
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_prteop.F
+END
+fci_axb.F
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_axb.F
+END
+fci_couple3.F
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_couple3.F
+END
+fci_davids.F
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_davids.F
+END
+fci_hami.F
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_hami.F
+END
+fci.F
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/2419/local/trunk/src/apps/moldft/fci/fci.F
+END
+yacobi.F
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/yacobi.F
+END
+fci_hmod.F
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_hmod.F
+END
+fci_solve.F
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_solve.F
+END
+fci_dfill.F
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_dfill.F
+END
+screen.F
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/screen.F
+END
+fci_hsort.F
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_hsort.F
+END
+fci_srt1cc.F
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_srt1cc.F
+END
+fci_mfndwt.F
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_mfndwt.F
+END
+fci_1pdm.F
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/fci_1pdm.F
+END
+linux_cputime.c
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/linux_cputime.c
+END
+crayio.c
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/2173/local/trunk/src/apps/moldft/fci/crayio.c
+END

@@ -1,0 +1,107 @@
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/doc
+END
+commands.tex
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/doc/commands.tex
+END
+matrixelements.tex
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/doc/matrixelements.tex
+END
+bibstuff.tex
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/doc/bibstuff.tex
+END
+orbitalgraph.eps
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/doc/orbitalgraph.eps
+END
+spinarcs.eps
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/doc/spinarcs.eps
+END
+orbitalarcs.fig
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/doc/orbitalarcs.fig
+END
+mspingraph.fig
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/doc/mspingraph.fig
+END
+spingraph.eps
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/doc/spingraph.eps
+END
+matrixelements.ps
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/doc/matrixelements.ps
+END
+orbitalgraph.fig
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/doc/orbitalgraph.fig
+END
+matrixelements.toc
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/doc/matrixelements.toc
+END
+spinarcs.fig
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/doc/spinarcs.fig
+END
+psfig.sty
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/doc/psfig.sty
+END
+GNUmakefile
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/doc/GNUmakefile
+END
+orbitalarcs.eps
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/doc/orbitalarcs.eps
+END
+mspingraph.eps
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/doc/mspingraph.eps
+END
+spingraph.fig
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/!svn/ver/1303/local/trunk/src/apps/moldft/fci/doc/spingraph.fig
+END
