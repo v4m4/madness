@@ -252,6 +252,71 @@ double mask3(const coordT& ruser) {
 //     void serialize(Archive& ar) {}
 // };
 
+
+/// simple projector class for 1- and 2-particle projectors
+template<typename T, std::size_t NDIM>
+class Projector {
+
+    int particle_;
+    std::vector<Function<T,NDIM> > p_;
+
+public:
+
+    Projector() : p_(std::vector<Function<T,NDIM> >()) {}
+
+    /// simple constructor with only one orbital to project out
+    Projector(const Function<T,NDIM>& p, const int particle=0)
+            : particle_(particle), p_(std::vector<Function<T,NDIM> >(1,p)) {
+        MADNESS_ASSERT(particle_==0 or particle_==1);
+        MADNESS_ASSERT(p_.size()>0);
+    }
+
+    /// constructor with a set of orbitals to project out
+    Projector(const std::vector<Function<T,NDIM> >& p, const int particle=0) : particle_(particle), p_(p) {
+        MADNESS_ASSERT(particle_==0 or particle_==1);
+        MADNESS_ASSERT(p_.size()>0);
+    }
+
+    int& particle() {return particle_;}
+    const int& particle() const {return particle_;}
+
+    /// get a const reference to the orbitals
+    const std::vector<Function<T,NDIM> >& p() const {return p_;}
+
+    /// project f on p: |result> =  | p><p | f>
+    template<std::size_t FDIM>
+    typename enable_if_c<NDIM==FDIM, Function<T,FDIM> >::type
+    operator()(const Function<T,FDIM>& f) const {
+
+        const double ovlp=inner(f,p_[0]);
+        Function<T,NDIM> sum=ovlp*p_[0];
+
+        for (unsigned int i=1; i<p_.size(); ++i) {
+            const double ovlp2=inner(f,p_[i]);
+            sum=(sum+ovlp2*p_[i]).truncate().reduce_rank();
+        }
+        return sum;
+    }
+
+//prod    /// project p out of f: |result(1,2)> = sum_p | p(1)><p(1) | f(1,2)>
+//prod    template<std::size_t FDIM>
+//prod    typename enable_if_c<2*NDIM==FDIM, Function<T,FDIM> >::type
+//prod    operator()(const Function<T,FDIM>& f) const {
+//prod        real_function_6d sum=real_factory_6d(p_.begin()->world());
+//prod        for (unsigned int i=0; i<p_.size(); ++i) {
+//prod            const real_function_3d pf2=f.project_out(p_[i],particle_);
+//prod            real_function_6d tmp;
+//prod            MADNESS_EXCEPTION("Projector class: the hartree product is inaccurate -- don't use it",1);
+//prod            if (particle_==0) tmp=hartree_product(p_[i],pf2);
+//prod            else tmp=hartree_product(pf2,p_[i]);
+//prod            sum=(sum+tmp);
+//prod        }
+//prod        sum.truncate();
+//prod        return sum;
+//prod    }
+};
+
+
 class MolecularGuessDensityFunctor : public FunctionFunctorInterface<double,3> {
 private:
     const Molecule& molecule;
@@ -3564,308 +3629,6 @@ struct Calculation {
       }
     }
 
-//     void solve_gas_phase(World & world)
-//     {
-//         functionT arho_old, brho_old;
-//         const double dconv = std::max(FunctionDefaults<3>::get_thresh(), param.dconv);
-//         const double trantol = vtol / std::min(30.0, double(amo.size()));
-//         const double tolloc = 1e-3;
-//         double update_residual = 0.0, bsh_residual = 0.0;
-//         subspaceT subspace;
-//         tensorT Q;
-//         bool do_this_iter = true;
-//         // Shrink subspace until stop localizing/canonicalizing
-//         int maxsub_save = param.maxsub;
-//         param.maxsub = 2;
-
-//         for(int iter = 0;iter < param.maxiter;++iter){
-//             if(world.rank() == 0)
-//                 printf("\nIteration %d at time %.1fs\n\n", iter, wall_time());
-
-//             if (iter > 0 && update_residual < 0.1) {
-//                 //do_this_iter = false;
-//                 param.maxsub = maxsub_save;
-//             }
-
-//             if(param.localize && do_this_iter) {
-//                 tensorT U;
-//                 if (param.localize_pm) {
-//                     U = localize_PM(world, amo, aset, tolloc, 0.25, iter == 0);
-//                 }
-//                 else {
-//                     U = localize_boys(world, amo, aset, tolloc, 0.25, iter==0);
-//                 }
-//                 amo = transform(world, amo, U, trantol, true);
-//                 truncate(world, amo);
-//                 normalize(world, amo);
-//                 rotate_subspace(world, U, subspace, 0, amo.size(), trantol);
-//                 if(!param.spin_restricted && param.nbeta != 0 ){
-//                     if (param.localize_pm) {
-//                         U = localize_PM(world, bmo, bset, tolloc, 0.25, iter == 0);
-//                     }
-//                     else {
-//                         U = localize_boys(world, bmo, bset, tolloc, 0.25, iter==0);
-//                     }
-//                     bmo = transform(world, bmo, U, trantol, true);
-//                     truncate(world, bmo);
-//                     normalize(world, bmo);
-//                     rotate_subspace(world, U, subspace, amo.size(), bmo.size(), trantol);
-//                 }
-//             }
-
-//             START_TIMER(world);
-//             functionT arho = make_density(world, aocc, amo), brho;
-
-//             if (param.nbeta) {
-//                 if (param.spin_restricted) {
-//                     brho = arho;
-//                 }
-//                 else {
-//                     brho = make_density(world, bocc, bmo);
-//                 }
-//             }
-//             else {
-//                 brho = functionT(world); // zero
-//             }
-//             END_TIMER(world, "Make densities");
-
-//             if(iter < 2 || (iter % 10) == 0){
-//                 START_TIMER(world);
-//                 loadbal(world, arho, brho, arho_old, brho_old, subspace);
-//                 END_TIMER(world, "Load balancing");
-//             }
-//             double da = 0.0, db = 0.0;
-//             if(iter > 0){
-//                 da = (arho - arho_old).norm2();
-//                 db = (brho - brho_old).norm2();
-//                 if(world.rank() == 0)
-//                     print("delta rho", da, db, "residuals", bsh_residual, update_residual);
-
-//             }
-
-//             arho_old = arho;
-//             brho_old = brho;
-//             functionT rho = arho + brho;
-//             vacuo_rho = arho + brho;
-// 	    //double Xrhotrace = rho.trace(); // DEBUG
-//             rho.truncate();
-//             double enuclear = inner(rho, vnuc);
-
-// 	    // DEBUG
-// // 	    double rhotrace = rho.trace();
-// // 	    double vnuctrace = vnuc.trace();
-// // 	    if (world.rank() == 0) printf("DEBUG %.12f %.12f %.12f\n", Xrhotrace, rhotrace, vnuctrace);
-// 	    // END DEBUG
-
-//             START_TIMER(world);
-//             functionT vcoul = apply(*coulop, rho);
-//             END_TIMER(world, "Coulomb");
-
-//             double ecoulomb = 0.5 * inner(rho, vcoul);
-//             rho.clear(false);
-//             functionT vlocal = vcoul + vnuc;
-//             vcoul.clear(false);
-//             vlocal.truncate();
-//             double exca = 0.0, excb = 0.0;
-
-//             vecfuncT vf, delrho;
-//             if (xc.is_dft()) {
-//                 arho.reconstruct();
-//                 if (param.nbeta != 0 && xc.is_spin_polarized()) brho.reconstruct();
-//                 // brho.reconstruct();
-
-//                 vf.push_back(arho);
-
-//                 if (xc.is_spin_polarized()) vf.push_back(brho);
-
-//                 if (xc.is_gga()) {
-
-//                     for (int axis=0; axis<3; ++axis) delrho.push_back((*gradop[axis])(arho,false)); // delrho
-//                     if (xc.is_spin_polarized())
-//                         for (int axis=0; axis<3; ++axis) delrho.push_back((*gradop[axis])(brho,true));
-
-
-//                     world.gop.fence(); // NECESSARY
-
-//                     vf.push_back(delrho[0]*delrho[0]+delrho[1]*delrho[1]+delrho[2]*delrho[2]);     // sigma_aa
-
-//                     if (xc.is_spin_polarized())
-//                         vf.push_back(delrho[0]*delrho[3]+delrho[1]*delrho[4]+delrho[2]*delrho[5]); // sigma_ab
-//                     if (xc.is_spin_polarized())
-//                         vf.push_back(delrho[3]*delrho[3]+delrho[4]*delrho[4]+delrho[5]*delrho[5]); // sigma_bb
-
-//                     for (int axis=0; axis<3; ++axis) vf.push_back(delrho[axis]);        // dda_x
-
-//                     if (xc.is_spin_polarized())
-//                         for (int axis=0; axis<3; ++axis) vf.push_back(delrho[axis + 3]); // ddb_x
-//                     world.gop.fence(); // NECESSARY
-//                 }
-//                 if (vf.size()) {
-//                     reconstruct(world, vf);
-//                     arho.refine_to_common_level(vf); // Ugly but temporary (I hope!)
-//                 }
-//             }
-
-//             vecfuncT Vpsia = apply_potential(world, aocc, amo, vf, delrho, vlocal, exca, 0);
-//             vecfuncT Vpsib;
-//             if(!param.spin_restricted && param.nbeta) {
-//                 Vpsib = apply_potential(world, bocc, bmo, vf, delrho, vlocal, excb, 1);
-//             }
-
-//             double ekina = 0.0, ekinb = 0.0;
-//             tensorT focka = make_fock_matrix(world, amo, Vpsia, aocc, ekina);
-//             tensorT fockb = focka;
-
-//             if (!param.spin_restricted && param.nbeta != 0)
-//                 fockb = make_fock_matrix(world, bmo, Vpsib, bocc, ekinb);
-//             else if (param.nbeta != 0) {
-//                 ekinb = ekina;
-//             }
-//             if (!param.localize && do_this_iter) {
-//                 tensorT U = diag_fock_matrix(world, focka, amo, Vpsia, aeps, aocc, FunctionDefaults<3>::get_thresh());
-//                 rotate_subspace(world, U, subspace, 0, amo.size(), trantol);
-//                 if (!param.spin_restricted && param.nbeta != 0) {
-//                     U = diag_fock_matrix(world, fockb, bmo, Vpsib, beps, bocc, FunctionDefaults<3>::get_thresh());
-//                     rotate_subspace(world, U, subspace, amo.size(), bmo.size(), trantol);
-//                 }
-//             }
-
-
-//             double enrep = molecule.nuclear_repulsion_energy();
-//             double ekinetic = ekina + ekinb;
-//             double exc = exca + excb;
-//             double etot = ekinetic + enuclear + ecoulomb + exc + enrep;
-//             current_energy = etot;
-//             vacuo_energy = etot;
-
-//             if(world.rank() == 0){
-//                 printf("\n              kinetic %16.8f\n", ekinetic);
-//                 printf("   nuclear attraction %16.8f\n", enuclear);
-//                 printf("              coulomb %16.8f\n", ecoulomb);
-//                 printf(" exchange-correlation %16.8f\n", exc);
-//                 printf("    nuclear-repulsion %16.8f\n", enrep);
-//                 printf("                total %16.8f\n\n", etot);
-//             }
-
-//             if(iter > 0){
-//                 //print("##convergence criteria: density delta=", da < dconv * molecule.natom() && db < dconv * molecule.natom(), ", bsh_residual=", (param.conv_only_dens || bsh_residual < 5.0*dconv));
-//                 if(da < dconv * molecule.natom() && db < dconv * molecule.natom() && (param.conv_only_dens || bsh_residual < 5.0*dconv)){
-//                     if(world.rank() == 0) {
-//                         print("\nConverged!\n");
-//                     }
-
-//                     // Diagonalize to get the eigenvalues and if desired the final eigenvectors
-//             START_TIMER(world);
-//                     tensorT U;
-//                     tensorT overlap = matrix_inner(world, amo, amo, true);
-
-//                     sygvp(world, focka, overlap, 1, U, aeps);
-//                     END_TIMER(world, " compute eigen alpha sygv ");
-
-//                     if (!param.localize) {
-//                         amo = transform(world, amo, U, trantol, true);
-//                         truncate(world, amo);
-//                         normalize(world, amo);
-//                     }
-
-//                     if(param.nbeta != 0 && !param.spin_restricted){
-//                         START_TIMER(world);
-//                         overlap = matrix_inner(world, bmo, bmo, true);
-
-//                         sygvp(world, fockb, overlap, 1, U, beps);
-//                         END_TIMER(world, " compute eigen beta sygv");
-
-//                         if (!param.localize) {
-//                             bmo = transform(world, bmo, U, trantol, true);
-//                             truncate(world, bmo);
-//                             normalize(world, bmo);
-//                         }
-//                     }
-
-//                     if(world.rank() == 0) {
-//                         print(" ");
-//                         print("alpha eigenvalues");
-//                         print(aeps);
-//                         if(param.nbeta != 0.0 && !param.spin_restricted){
-//                             print("beta eigenvalues");
-//                             print(beps);
-//                         }
-//                     }
-
-//                     if (param.localize) {
-//                         // Restore the diagonal elements for the analysis
-//                         for (unsigned int i=0; i<amo.size(); ++i) aeps[i] = focka(i,i);
-//                         for (unsigned int i=0; i<bmo.size(); ++i) beps[i] = fockb(i,i);
-//                     }
-
-//                     break;
-//                 }
-
-//             }
-
-//             update_subspace(world, Vpsia, Vpsib, focka, fockb, subspace, Q, bsh_residual, update_residual);
-//         }
-
-
-//         {
-//             // Analyze molecule volume and surface areas
-//             functionT arho = make_density(world, aocc, amo), brho;
-//             if (param.nbeta) {
-//                 if (param.spin_restricted) {
-//                     brho = arho;
-//                 }
-//                 else {
-//                     brho = make_density(world, bocc, bmo);
-//                 }
-//             }
-//             //const double rho0 = 0.00048;
-//             const double rho0 = 0.00078;
-//             const double beta = 1.3;
-//             arho += brho; // total density
-//             functionT c = copy(arho);
-//             c.unaryop(DensityIsosurfaceCharacteristic<3>(rho0,beta));
-//             plot_line("density.dat",1001, vec(0.0,0.0,-20.0),  vec(0.0,0.0,20.0), arho);
-//             plot_line("volume.dat",1001, vec(0.0,0.0,-20.0),  vec(0.0,0.0,20.0), c);
-
-//             double volume = c.trace();
-//             double facvol = std::pow(constants::atomic_unit_of_length*1e10,3.0);
-//             if (world.rank() == 0) print("\nMolecular volume:",volume,"a.u.",volume*facvol,"Angstrom^3");
-//             if (world.rank() == 0) print("Equivalent sphere radius",std::pow(3.0*volume/4.0/constants::pi,1.0/3.0),"a.u.");
-
-//             c = copy(arho);
-//             c.unaryop(DensityIsosurfaceCharacteristicDerivative<3>(rho0,beta));
-//             plot_line("surface.dat",1001, vec(0.0,0.0,-20.0),  vec(0.0,0.0,20.0), c);
-
-//             c = c*c*((*gradop[0])(arho).square() + (*gradop[1])(arho).square() + (*gradop[2])(arho).square());
-//             double area = c.trace();
-//             double facarea = std::pow(constants::atomic_unit_of_length*1e10,2.0);
-//             if (world.rank() == 0) print("\nMolecular surface area:",area,"a.u.",area*facarea,"Angstrom^2");
-//             if (world.rank() == 0) print("Equivalent sphere radius",std::sqrt(area/4.0/constants::pi),"a.u.");
-//         }
-
-//         if (world.rank() == 0) {
-//             if (param.localize) print("Orbitals are localized - energies are diagonal Fock matrix elements\n");
-//             else print("Orbitals are eigenvectors - energies are eigenvalues\n");
-//             print("Analysis of alpha MO vectors");
-//         }
-
-//         analyze_vectors(world, amo, aocc, aeps);
-//         if (param.nbeta != 0 && !param.spin_restricted) {
-//             if (world.rank() == 0)
-//                 print("Analysis of beta MO vectors");
-
-//             analyze_vectors(world, bmo, bocc, beps);
-//         }
-//         if(world.rank()==0){
-//             print("\n\n\n");
-//             print(" ------------------------------------------------------------------------------");
-//             print(" |                              MADNESS SOLVATION MODULE                      |");
-//             print(" ------------------------------------------------------------------------------");
-//             print(" \n\n");
-//         }
-//         //print("Entrying Solvation Module \n\n");
-//     }// end gas_phase function
-//     // For given protocol, solve the DFT/HF/response equations
     void solve(World & world)
     {
         functionT arho_old, brho_old;
@@ -3880,30 +3643,6 @@ struct Calculation {
         int maxsub_save = param.maxsub;
         param.maxsub = 2;
 
-        //  if(param.absolvent){ //param.physisorption||param.svpe||
-        //     functorT rhon_functor(new NuclearDensityFunctor(molecule));
-        //     if (world.rank()==0)
-        //         print("Projecting Nuclear Charge Density");
-        //     rhon = real_factory_3d(world).functor(rhon_functor).truncate_on_project().truncate_mode(0); // nuclear charge density//Jacob added
-        //     rhon.truncate();
-        //     // coord_3d lo(0.0), hi(0.0);
-        //     //lo[0] = -20.0;
-        //     // hi[0] = 20.0;
-        //     double total_rhon = rhon.trace();
-        //     if(world.rank()==0)
-        //         print("Nuclear Charge ", total_rhon);
-
-        // }
-         /* //Initial electrostatic potential for DFT solvation moldel
-            if(param.absolvent){
-                rhoT = rhon - vacuo_rho;
-                real_convolution_3d op = madness::CoulombOperator(world, param.lo, param.lo);
-                functionT U_guess = op(rhoT);
-                print("TOTAL CHARGE", rhoT.trace());
-                DFTSolventSolver DFTSsolver(vacuo_rho,rhoT,param.rho_0,param.epsilon_2,param.maxiter,world,param.Gamma,param.beta \
-                                            ,std::max(1e-5,1e-7));
-                Uabinit = DFTSsolver.ESP(U_guess);
-         }*/
         for(int iter = 0;iter < param.maxiter;++iter){
             if(world.rank() == 0)
                 printf("\nIteration %d at time %.1fs\n\n", iter, wall_time());
@@ -3976,18 +3715,10 @@ struct Calculation {
             arho_old = arho;
             brho_old = brho;
             functionT rho = arho + brho;
-            //            rho_elec = rho;// to be used in the solvent solver
-	    //print("Rho Elec Solvent , Gas Phase Density ", rho_elec.trace(), vacuo_rho.trace()); // DEBUG
-            // double Xrhoetrace = rho_elec.trace(); //DEBUG
             rho.truncate();
             real_function_3d vnuc = potentialmanager->vnuclear();
             double enuclear = inner(rho, vnuc);
 
-	    // DEBUG
- 	    //double rhotrace = rho.trace();
- 	    //double vnuctrace = vnuc.trace();
-            // if (world.rank() == 0) printf("DEBUG %.12f %.12f %.12f\n", Xrhoetrace, rhotrace, vnuctrace);
-	    // END DEBUG
 
             TAU_START("Coulomb");
             START_TIMER(world);
@@ -3999,24 +3730,6 @@ struct Calculation {
 
             double ecoulomb = 0.5 * inner(rho, vcoul);
             rho.clear(false);
-            // /*==========================================================================================
-            //   Instantiating SVPE and Isodensity solvation models
-            //   ============================================================================================*/
-            // if (param.absolvent){
-            //     //Abinitio Solvation Model
-            //     rhoT = rhon - rho_elec;
-            //     //  print("DEBUG TOTAL CHARGE", rhoT.trace());
-            //     DFTSolventSolver DFTSsolver(vacuo_rho,rhoT,param.rho_0,param.epsilon_2,param.maxiter,world,param.Gamma,param.beta 
-            //                                 ,std::max(1e-5,1e-6));
-            //     Uabinit = DFTSsolver.ESP();
-            //     real_functor_3d molecular_mask_functor(new MolecularVolumeMask(param.sigma,molecule.atomic_radii 
-            //                                                                  ,molecule.get_all_coords_vec()));
-            //     //print("DEBUG Interaction Pot", Uabinit.trace());
-            //     // mol_mask = real_factory_3d(world).functor(molecular_mask_functor);
-            // }
-            // if(param.absolvent)
-            //     vlocal = vcoul + vnuc + Uabinit;
-            // else
             vlocal = vcoul + vnuc ;
             
             vcoul.clear(false);
@@ -4165,38 +3878,6 @@ struct Calculation {
 
             update_subspace(world, Vpsia, Vpsib, focka, fockb, subspace, Q, bsh_residual, update_residual);
         }
-        // if(param.absolvent){
-        //     rhoT = rhon - rho_elec;
-        //     // print("TOTAL CHARGE", rhoT.trace());
-        //     DFTSolventSolver DFTSsolver(vacuo_rho,rhoT,param.rho_0,param.epsilon_2,param.maxiter,world, 
-        //                                 param.Gamma,param.beta,std::max(1e-5,1e-7));
-        //     //DFTSsolver.dftsolverplots();
-        //     //functionT vsolvent = DFTSsolver.ESP();
-        //     //realfunc FF  = DFTSsolver.make_electric_field(vsolvent);
-        //     //double Fxyz = DFTSsolver.ave_rxn_field(Uabinit,mol_mask);
-        //     double E_es = 0.5*rhoT.inner(Uabinit);
-        //     double E_cav = DFTSsolver.cavitation_energy();
-        //     double Surface = DFTSsolver.make_surface().trace();
-        //     double Volume = DFTSsolver.make_characteristic_func().trace();
-        //     double E_free = esol + E_es - vacuo_energy;
-        //     double G_sol = E_free + E_cav;
-        //     // print("Electrostatic energy ",E_es);
-
-        //     if(world.rank() == 0) {
-        //         print("\n\n");
-        //         print("                            MADNESS SOLVATION RESULTS           ");
-        //         print("                                _________________              \n ");
-        //         printf("          (electrostatic) solvation energy: %16.8f %s %12.8f %s\n      ",E_es, "(",E_es*627.503,"kcal/mol)");
-        //         printf("(electrostatic)solvation free energy: %16.8f %s %12.8f %s\n     ",E_free, "(",E_free*627.503,"kcal/mol)");
-        //         printf("                solvation free energy: %16.8f %s %12.8f %s\n     ",G_sol, "(",G_sol*627.503,"kcal/mol)");
-        //         //  print("       solute-solvent reflected field:    ",Fxyz,"a.u.");
-        //         printf("                    cavitation energy: %16.8f\n     ",E_cav*627.503);
-        //         printf("                     gas phase energy: %16.8f\n     ",vacuo_energy);
-        //         printf("                solution phase energy: %16.8f\n     ",esol);
-        //         printf("                     Molecular Volume: %16.8f\n     ",Volume);
-        //         printf("                    Molecular Surface: %16.8f\n\n     ",Surface);
-        //     }
-        //  }
 
         if (world.rank() == 0) {
             if (param.localize) print("Orbitals are localized - energies are diagonal Fock matrix elements\n");
@@ -4221,16 +3902,19 @@ struct Calculation {
 
         if(param.response_freq != 0.0) 
             error("Frequency should be ZERO.");
-        
-        print("**********************");
-        print("   start solve plus   ");
-        print("**********************");
+        if(world.rank() == 0) { 
+            print("**********************");
+            print("   start solve plus   ");
+            print("**********************");
+        }
         // amo_p, bmo_p
         solve_mp(world, amo_p, bmo_p, 0, ep);
 
-        print("**********************");
-        print("   start solve minus  ");
-        print("**********************");
+        if(world.rank() == 0) { 
+            print("**********************");
+            print("   start solve minus  ");
+            print("**********************");
+        }
         // amo_m, bmo_m
         solve_mp(world, amo_m, bmo_m, 1, ep);
     }
@@ -4251,7 +3935,8 @@ struct Calculation {
         int axis = param.response_axis;
 
         response_frequency(world, axis);
-        print(" Frequency for response function = ", omega);
+        if(world.rank() == 0)  
+            print(" Frequency for response function = ", omega);
         
         const double rconv = std::max(FunctionDefaults<3>::get_thresh(), param.rconv);
         vecfuncT ax = zero_functions<double, 3>(world, param.nalpha);
@@ -4265,12 +3950,13 @@ struct Calculation {
         vecfuncT bx_old = zero_functions<double,3>(world, param.nbeta);
         vecfuncT by_old = zero_functions<double,3>(world, param.nbeta);
         
-        print("\n\n\n");
-        print(" ------------------------------------------------------------------------------");
-        print(" |                MADNESS FINITE FIELD SOLVATION MODULE                  |");
-        print(" ------------------------------------------------------------------------------");
-        print(" \n\n");
-
+        if(world.rank() == 0) { 
+            print("\n\n\n");
+            print(" ------------------------------------------------------------------------------");
+            print(" |                MADNESS FINITE FIELD SOLVATION MODULE                  |");
+            print(" ------------------------------------------------------------------------------");
+            print(" \n\n");
+        }
 
         for(int iter = 0;iter < param.maxiter;++iter){
             if(world.rank() == 0)
@@ -4739,7 +4425,8 @@ struct Calculation {
     void calc_freq(World & world, double & omega, tensorT & ak, tensorT & bk, int flag)
     {
         if (world.rank() == 0) { 
-            print(" eps_alpha = ", aeps);
+            print(" eps_alpha");
+            print(aeps);
             if(!param.spin_restricted && param.nbeta != 0) print(" eps_beta  = ", beps);
 
             print(" frequency = ", omega);
@@ -4750,13 +4437,15 @@ struct Calculation {
         if(flag == 0) {
             for(int i=0; i<param.nalpha; ++i){
                 ak[i] = sqrt(-2.0 * (aeps[i] + omega));
-                print(" kx(alpha) [", i, "] : sqrt(-2 * (eps + omega)) = ", ak[i]);
+                if (world.rank() == 0)  
+                    print(" kx(alpha) [", i, "] : sqrt(-2 * (eps + omega)) = ", ak[i]);
             }
             if(!param.spin_restricted && param.nbeta != 0) {
                 for(int i=0; i<param.nbeta; ++i){
                     bk[i] = sqrt(-2.0 * (beps[i] + omega));
                     if (world.rank() == 0)  
-                        print(" kx(beta) [", i, "]: sqrt(-2 * (eps + omega)) = ", bk[i]);
+                        if (world.rank() == 0)  
+                            print(" kx(beta) [", i, "]: sqrt(-2 * (eps + omega)) = ", bk[i]);
                 }
             }
         }
@@ -4782,6 +4471,7 @@ struct Calculation {
         TAU_START("Make BSHOp");
         START_TIMER(world);
         for(int i=0; i<param.nalpha; ++i) {
+            // thresh : 1e-6
             aop[i] = poperatorT(BSHOperatorPtr3D(world, ak[i], 0.001, 1e-6));
         }
         if(!param.spin_restricted && param.nbeta != 0) {
@@ -4914,7 +4604,7 @@ struct Calculation {
         TAU_STOP("Coulomb");
         print_meminfo(world.rank(), "Coulomb");
 
-        rho.clear(false);
+        //rho.clear(false);
         //vcoul.scale(2.0); 
         vlocal = vcoul + vnuc ;
 
@@ -5016,14 +4706,48 @@ struct Calculation {
         return djkmo;
     }
 
-    vecfuncT calc_rhs(World & world, vecfuncT & Vdmo, vecfuncT & dipolemo, vecfuncT & djkmo) 
+//prod    vecfuncT calc_rhs(World & world, vecfuncT & Vdmo, vecfuncT & dipolemo, vecfuncT & djkmo) 
+//prod    {
+//prod        vecfuncT rhs;
+//prod
+//prod        TAU_START("Sum rhs response");
+//prod        START_TIMER(world);
+//prod        //dmo_rhs = Vdmo + dipolemo + djkmo;
+//prod        rhs = add(world, Vdmo, add(world, dipolemo, djkmo));
+//prod        END_TIMER(world, "Sum rhs response");
+//prod        TAU_STOP("Sum rhs response");
+//prod        print_meminfo(world.rank(), "Sum rhs response");
+//prod        truncate(world, rhs);
+//prod
+//prod        return rhs;
+//prod    }
+
+    vecfuncT calc_rhs(World & world, vecfuncT & Vdmo, vecfuncT & dipolemo, vecfuncT & djkmo )
     {
         vecfuncT rhs;
 
         TAU_START("Sum rhs response");
         START_TIMER(world);
         //dmo_rhs = Vdmo + dipolemo + djkmo;
-        rhs = add(world, Vdmo, add(world, dipolemo, djkmo));
+
+        // the projector on the unperturbed density
+        Projector<double,3> rho0(amo);
+
+       vecfuncT gp= add(world, dipolemo, djkmo);
+//        vecfuncT gp1= mul_sparse(world, rho0, gp, vtol);
+//prod        vecfuncT Gampsi;
+        for (int i=0; i<Vdmo.size(); ++i) {
+            functionT gp1 =  Vdmo[i] + gp[i];
+            gp1 -= rho0(gp1);
+//prod            functionT a = rho0*gp;
+//prod            Gampsi.push_back(gp);
+            rhs.push_back(gp1);
+        }
+//prod
+//prod        //rhs = add(world, Vdmo, add(world, dipolemo, djkmo));
+//prod        rhs = add(world, Vdmo, Gampsi);
+//prod        rhs = add(world, Vdmo, add(world, dipolemo, djkmo));
+
         END_TIMER(world, "Sum rhs response");
         TAU_STOP("Sum rhs response");
         print_meminfo(world.rank(), "Sum rhs response");
@@ -5031,6 +4755,7 @@ struct Calculation {
 
         return rhs;
     }
+
 
     void calc_response_function(World & world, vecfuncT & dmo, 
             std::vector<poperatorT> & op, vecfuncT & rhs)
@@ -5065,9 +4790,11 @@ struct Calculation {
         }
     }
 
+
+//vama ugly ! alpha_ij(w) = - sum(m occ) [<psi_m(0)|r_i|psi_mj(1)(w)> + <psi_mj(1)(-w)|r_i|psi_m(0)>]
+
     void calc_dpolar(World & world, tensorT & polar, functionT & drho, int & axis)
     {
-        double sum = 0.0;
         functionT dipolefunc;
 
         for(int i=0; i<3; ++i) {
@@ -5076,20 +4803,6 @@ struct Calculation {
             dipolefunc = factoryT(world).functor(functorT(new MomentFunctor(f)));
             polar(axis, i) = -2 * dipolefunc.inner(drho);
 
-            if(polar(axis, i) < 0.001)
-                polar(axis, i) = 0.0;
-            else {
-                sum = sum + polar(axis, i);
-                //print("sum = ", sum);
-                if(i != axis)
-                    polar(axis, i) = 0.0;
-            }
-
-            if(i == axis) {
-                polar(axis, i) = sum;
-                sum = 0.0;
-            }
-            
             dipolefunc.clear(false);
         }
     }
@@ -5155,6 +4868,16 @@ struct Calculation {
 
         if (world.rank() == 0) { 
             if(fflag != 0) {
+                for(int j=0; j<3; ++j) {
+                    for(int k=0; k<3; ++k) {
+                        if(Dpolar_alpha(j, k) < 0.001 && Dpolar_alpha(j,k) < -0.001)
+                            Dpolar_alpha(j, k) = 0.0;
+                        if(Dpolar_beta(j, k) < 0.001 && Dpolar_beta(j, k) < -0.001)
+                            Dpolar_beta(j, k) = 0.0;
+                        if(total_Dpolar(j, k) < 0.001 && total_Dpolar(j, k) < -0.001)
+                            total_Dpolar(j, k) = 0.0;
+                    }
+                }
                     print("\n");
                 print("************************************************************************");
                 print("\tEigenvalues of Dynamic Polarizability ");
@@ -5242,6 +4965,11 @@ struct Calculation {
         double update_residual = 0.0;
         int maxsub_save = param.maxsub;
 
+                    if(world.rank() == 0) {
+                        print(" ");
+                        print("alpha eigenvalues 2");
+                        print(aeps);
+                    }
         int aflag = 0;
         int bflag = 1;
         
@@ -5271,6 +4999,8 @@ struct Calculation {
         functionT brho = factoryT(world);
         functionT rho = make_density_ground(world, arho, brho);
 
+        functionT arhod = factoryT(world);
+        functionT brhod = factoryT(world);
         TAU_START("Make delrho");
         START_TIMER(world);
         vecfuncT vf = calc_drho(world, arho, brho);
@@ -5451,14 +5181,16 @@ struct Calculation {
 
                     double aresidual =  residual_response(world, ax, ay, ax_old, ay_old, rax, ray);
                     double bresidual = 0.0;
-                world.gop.fence(); 
+                    world.gop.fence(); 
                     if(!param.spin_restricted && param.nbeta != 0) { 
-                        bresidual =  residual + residual_response(world, bx, by, bx_old, by_old, rbx, rby);
+                        bresidual = aresidual + residual_response(world, bx, by, bx_old, by_old, rbx, rby);
                         residual = std::max(aresidual, bresidual);
-                world.gop.fence(); 
+                        world.gop.fence(); 
                     }
                     else residual = aresidual;
 
+                    if (world.rank() == 0)  
+                        print("\nresiduals_response (first) = ", residual);
 #if 0
                     rax = sub(world, ax_old, ax);
                     ray = sub(world, ay_old, ay);
@@ -5468,17 +5200,19 @@ struct Calculation {
                         rby = sub(world, by_old, by);
                     }
 #endif
+                    residual = 0.0;
+#if 0
+                    residual = norm2(world, sub(world, ax_old, ax)) + norm2(world, sub(world, ay_old, ay));
+                    if(!param.spin_restricted && param.nbeta != 0) 
+                        residual = residual + norm2(world, sub(world, bx_old, bx)) + norm2(world, sub(world, by_old, by));
+                    else if(param.nbeta != 0) residual = 2.0 * residual; 
+#endif
                     double nx,ny;
+                    ////////UPDATE
                     nx=norm2(world, ax);
                     if (world.rank() == 0) 
                         print("CURRENT_X_norm2() = ", nx);
                     update_response_subspace(world, ax, ay, bx, by, rax, ray, rbx, rby, subspace, Q, update_residual); 
-
-                    //residual = 0.0;
-                    //residual = norm2(world, sub(world, ax_old, ax)) + norm2(world, sub(world, ay_old, ay));
-                    //if(!param.spin_restricted && param.nbeta != 0) 
-                    //    residual = residual + norm2(world, sub(world, bx_old, bx)) + norm2(world, sub(world, by_old, by));
-                    //else if(param.nbeta != 0) residual = 2.0 * residual; 
 
                     nx=norm2(world, ax);
                     ny=norm2(world, ay);
@@ -5487,11 +5221,11 @@ struct Calculation {
                         print("new Y (alpha) norm2() = ", ny);
                     }
 
-                    aresidual =  residual_response(world, ax, ay, ax_old, ay_old, rax, ray);
+                    aresidual = residual_response(world, ax, ay, ax_old, ay_old, rax, ray);
                     bresidual = 0.0;
                     
                     if(!param.spin_restricted && param.nbeta != 0) { 
-                        bresidual =  residual + residual_response(world, bx, by, bx_old, by_old, rbx, rby);
+                        bresidual = residual_response(world, bx, by, bx_old, by_old, rbx, rby);
                         residual = std::max(aresidual, bresidual);
                     }
                     else residual = aresidual;
@@ -5533,7 +5267,6 @@ struct Calculation {
 
             solve_dpolar(world, total, ax, ay, bx, by, axis, total_Dpolar, Dpolar_alpha, Dpolar_beta);
             
-            print("ax.norm2", norm2(world, ax));
             ax.clear();
             ay.clear();
             bx.clear();
@@ -5545,8 +5278,9 @@ struct Calculation {
 
             dipoleamo.clear();
             dipolebmo.clear();
-        }
 
+            if(axis == 2) break;
+        }
     } // end solve response function
 };
 // Computes molecular energy as a function of the geometry
@@ -5613,6 +5347,11 @@ class MolecularEnergy : public OptimizationTargetInterface {
             //     //}//  calc.save_mos(world); //debugging
 
             calc.solve(world);
+                    if(world.rank() == 0) {
+                        print(" ");
+                        print("alpha eigenvalues 1");
+                        print(calc.aeps);
+                    }
             if(calc.param.polar == true) {
                 if(calc.param.polar_ds == 0) {
                     calc.solve_finite_mo(world);

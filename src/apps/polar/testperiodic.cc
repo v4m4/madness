@@ -9,13 +9,13 @@
 
 
 #define WORLD_INSTANTIATE_STATIC_TEMPLATES
-#include <mra/mra.h>
-#include <linalg/solvers.h>
+#include <madness/mra/mra.h>
+#include <madness/tensor/solvers.h>
 using namespace madness;
 
-#include <moldft/molecule.h>
-#include <moldft/molecularbasis.h>
-#include <moldft/xcfunctional.h>
+#include <polar/molecule.h>
+#include <polar/molecularbasis.h>
+#include <polar/xcfunctional.h>
 
 static const double_complex I(0,1);
 static const double twopi = 2.0*constants::pi;
