@@ -185,13 +185,10 @@ namespace madness {
         public:
 
             /// Constructor
-
-            /// \param ds The distributed container that owns element i
-            /// \param i The element to be moved
             DelayedSend(World& world, const ProcessID dest,
                     const keyT& key, const Future<valueT>& value) :
                         world_(world), dest_(dest), key_(key), value_(value)
-        { }
+            { }
 
             virtual ~DelayedSend() { }
 
@@ -209,7 +206,7 @@ namespace madness {
         /// Receive data from remote node
 
         /// \tparam valueT The data type stored in cache
-        /// \param did The distributed ID
+        /// \param key The distributed ID
         /// \return A future to the data
         template <typename valueT, typename keyT>
         static Future<valueT> recv_internal(const keyT& key) {
@@ -405,27 +402,21 @@ namespace madness {
             if(parent != -1)
                 detail::DistCache<keyT>::set_cache_value(key, value);
 
-            // Precompute send checks
-            const bool send0 = (child0 != -1);
-            const bool send1 = (child1 != -1);
-
-            // Send active messages to children
-            if(send0 || send1) { // Check that this process has children in the binary tree
+            if(child0 != -1) { // Check that this process has children in the binary tree
 
                 // Get handler function and arguments
                 void (*handler)(const AmArg&) =
                         & WorldGopInterface::template bcast_handler<keyT, valueT, taskfnT>;
-                AmArg* const args = new_am_arg(
+                AmArg* const args0 = new_am_arg(
                         & WorldGopInterface::template bcast_task<keyT, valueT>,
                         key, value, root);
 
                 // Send active message to children
-                // Note: Only the last message is "managed" so the args buffer
-                // can be reused.
-                if(send0)
-                    world_.am.send(child0, handler, args, RMI::ATTR_ORDERED, !send1);
-                if(send1)
-                    world_.am.send(child1, handler, args, RMI::ATTR_ORDERED, true);
+                if(child1 != -1) {
+                    AmArg* const args1 = copy_am_arg(*args0);
+                    world_.am.send(child1, handler, args1);
+                }
+                world_.am.send(child0, handler, args0);
             }
         }
 
@@ -446,24 +437,21 @@ namespace madness {
                 group.remote_update();
             }
 
-            // Precompute send checks
-            const bool send0 = (child0 != -1);
-            const bool send1 = (child1 != -1);
-
-            if(send0 || send1) { // Check that this process has children in the binary tree
+            if(child0 != -1) { // Check that this process has children in the binary tree
 
                 // Get handler function and arguments
                 void (*handler)(const AmArg&) =
                         & WorldGopInterface::template group_bcast_handler<keyT, valueT, taskfnT>;
-                AmArg* const args = new_am_arg(
+                AmArg* const args0 = new_am_arg(
                         & WorldGopInterface::template group_bcast_task<keyT, valueT>,
                         key, value, group_root, group.id());
 
                 // Send active message to children
-                if(send0)
-                    world_.am.send(child0, handler, args, RMI::ATTR_ORDERED, !send1);
-                if(send1)
-                    world_.am.send(child1, handler, args, RMI::ATTR_ORDERED, true);
+                if(child1 != -1) {
+                    AmArg* const args1 = copy_am_arg(*args0);
+                    world_.am.send(child1, handler, args1);
+                }
+                world_.am.send(child0, handler, args0);
             }
         }
 
@@ -1207,7 +1195,6 @@ namespace madness {
         /// \param key The key associated with this reduction
         /// \param value The local value to be reduced
         /// \param op The reduction operation to be applied to local and remote data
-        /// \param root The process that will receive the result of the reduction
         /// \return A future to the reduce value on the root process, otherwise an
         /// uninitialized future that may be ignored.
         /// \note It is the user's responsibility to ensure that \c key does not
@@ -1265,7 +1252,6 @@ namespace madness {
         /// \param key The key associated with this reduction
         /// \param value The local value to be reduced
         /// \param op The reduction operation to be applied to local and remote data
-        /// \param group_root The group process that will receive the result of the reduction
         /// \param group The group that will preform the reduction
         /// \return A future to the reduce value on the root process, otherwise an
         /// uninitialized future that may be ignored

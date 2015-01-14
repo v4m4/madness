@@ -41,7 +41,7 @@ namespace madness {
         /// get a const reference to the orbitals
         const std::vector<Function<T,NDIM> >& p() const {return p_;}
 
-        /// project f on p: |result> =  | p><p | f>
+        /// project f on p: \f$ \left| result \right> =  \left| p \right>\left< p \right| f> \f$
         template<std::size_t FDIM>
         typename enable_if_c<NDIM==FDIM, Function<T,FDIM> >::type
         operator()(const Function<T,FDIM>& f) const {
@@ -52,7 +52,8 @@ namespace madness {
 
             compress(world, p_,false);	// don't fence
         	sum.compress(false);
-            f.compress();				// fence
+            f.compress(false);				// fence
+            world.gop.fence();
 
         	// the overlap of all orbitals with the rhs
         	Tensor<double> ovlp=inner(world,f,p_);
@@ -66,7 +67,7 @@ namespace madness {
             return sum;
         }
 
-        /// project p out of f: |result(1,2)> = sum_p | p(1)><p(1) | f(1,2)>
+        /// project p out of f: \f$ \left| result(1,2) \right> = sum_p \left| p(1) \right> \left< p(1) \right| \left. f(1,2) \right> \f$
         template<std::size_t FDIM>
         typename enable_if_c<2*NDIM==FDIM, Function<T,FDIM> >::type
         operator()(const Function<T,FDIM>& f) const {

@@ -36,7 +36,6 @@
 /// \file moldft/molecule.cc
 /// \brief Simple management of molecular information and potential
 
-#include <madness/TAU.h>
 #include <madness/tensor/tensor.h>
 #include <madness/tensor/tensor_lapack.h>
 #include <madness/constants.h>
@@ -162,8 +161,13 @@ void Molecule::set_atom_charge(unsigned int i, double zeff) {
   atoms[i].q = zeff;
 }
 
+unsigned int Molecule::get_atom_charge(unsigned int i) {
+  if (i>=atoms.size()) throw "trying to get charge of invalid atom";
+  return atoms[i].q;
+}
+
 unsigned int Molecule::get_atom_number(unsigned int i) {
-  if (i>=atoms.size()) throw "trying to set charge of invalid atom";
+  if (i>=atoms.size()) throw "trying to get charge of invalid atom";
   return atoms[i].atomic_number;
 }
 
@@ -275,10 +279,14 @@ double Molecule::nuclear_repulsion_energy_pseudo() const {
     return sum;
 }
 
-double Molecule::nuclear_dipole(int axis) const {
+double Molecule::nuclear_dipole(int axis, bool psp_calc) const {
     double sum = 0.0;
     for (unsigned int atom = 0; atom < atoms.size(); ++atom) {
-        unsigned int z = atoms[atom].atomic_number;
+        unsigned int z;
+        if (psp_calc){
+            z = atoms[atom].q;}
+        else{
+            z = atoms[atom].atomic_number;}
         if (core_pot.is_defined(z)) z -= core_pot.n_core_orb(z) * 2;
         double r;
         switch (axis) {
@@ -289,9 +297,9 @@ double Molecule::nuclear_dipole(int axis) const {
         }
         sum += r*z;
     }
-
     return sum;
 }
+
 
 double Molecule::nuclear_repulsion_derivative(int i, int axis) const {
     double sum = 0.0;
@@ -577,7 +585,6 @@ double Molecule::mol_nuclear_charge_density(double x, double y, double z) const 
     return  0.0;
 }
 double Molecule::nuclear_attraction_potential(double x, double y, double z) const {
-   TAU_START("Molecule::nuclear_attraction_potential");
     // This is very inefficient since it scales as O(ngrid*natom)
     // ... we can easily make an O(natom) version using
     // the integral operator and sparse projection of an effective
@@ -595,7 +602,6 @@ double Molecule::nuclear_attraction_potential(double x, double y, double z) cons
     // field contribution
     sum += field[0] * x + field[1] * y + field[2] * z;
 
-   TAU_STOP("Molecule::nuclear_attraction_potential");
     return sum;
 }
 
@@ -671,7 +677,6 @@ double Molecule::molecular_core_potential(double x, double y, double z) const {
     int natom = atoms.size();
     double sum = 0.0;
 
-    TAU_START("Molecule::molecular_core_potential");
     for (int i=0; i<natom; ++i) {
         unsigned int atn = atoms[i].atomic_number;
         if (core_pot.is_defined(atn)) {
@@ -680,7 +685,6 @@ double Molecule::molecular_core_potential(double x, double y, double z) const {
         }
     }
 
-    TAU_STOP("Molecule::molecular_core_potential");
     return sum;
 }
 

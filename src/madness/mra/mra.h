@@ -59,7 +59,7 @@
 #define FUNCTION_INSTANTIATE_6
 #endif
 
-static const bool VERIFY_TREE = false; //true;
+static const bool VERIFY_TREE = false; //true
 
 
 namespace madness {
@@ -578,7 +578,7 @@ namespace madness {
             PROFILE_MEMBER_FUNC(Function);
             if (!impl) return *this;
             verify();
-//            if (!is_compressed()) compress();
+            if (!is_compressed()) compress();
             impl->truncate(tol,fence);
             if (VERIFY_TREE) verify_tree();
             return *this;
@@ -1084,8 +1084,6 @@ namespace madness {
         }
 
         /// With this being an on-demand function, fill the MRA tree according to different criteria
-
-        /// @param[in]  op  the convolution operator for screening
         Function<T,NDIM>& fill_tree(bool fence=true) {
             MADNESS_ASSERT(is_on_demand());
 
@@ -1363,8 +1361,8 @@ namespace madness {
             vf[0].impl->refine_to_common_level(v, c, key0);
             if (mustfence) vf[0].world().gop.fence();
             if (fence) vf[0].world().gop.fence();
-            //if (VERIFY_TREE)
-                for (unsigned int i=0; i<vf.size(); i++) vf[i].verify_tree();
+            if (VERIFY_TREE)
+	      for (unsigned int i=0; i<vf.size(); i++) vf[i].verify_tree();
         }
 
         /// This is replaced with op(vector of functions) ... private
@@ -1376,6 +1374,8 @@ namespace madness {
             }
             impl->multiop_values(op, v);
             world().gop.fence();
+            if (VERIFY_TREE) verify_tree();
+
             return *this;
         }
 
@@ -2036,7 +2036,7 @@ namespace madness {
 
     /// symmetrize a function
 
-    /// @param[in]  symmetry; possible are:
+    /// @param[in]  symmetry possibilities are:
     ///                 (anti-) symmetric particle permutation ("sy_particle", "antisy_particle")
     ///                 symmetric mirror plane ("xy", "xz", "yz")
     /// @return     a new function symmetrized according to the input parameter

@@ -165,7 +165,6 @@ namespace madness {
         /// make the operator matrices r^n and \uparrow r^(n-1)
         /// @param[in]  R   operator matrix of the requested level;     NS: unfilter(r^(n+1)); modified NS: r^n
         /// @param[in]  T   upsampled operator matrix from level n-1;   NS: r^n; modified NS: filter( r^(n-1) )
-        /// @param[in]  modified    use (un) modified NS form
         ConvolutionData1D(const Tensor<Q>& R, const Tensor<Q>& T) : R(R), T(T) {
             Rnormf = R.normf();
             // Making the approximations is expensive ... only do it for
@@ -325,7 +324,7 @@ namespace madness {
             const Tensor<Q>* p=rnlij_cache.getptr(n,lx);
             if (p) return *p;
 
-            PROFILE_MEMBER_FUNC(Convolution1D);
+            // PROFILE_MEMBER_FUNC(Convolution1D); // Too fine grain for routine profiling
 
             long twok = 2*k;
             Tensor<Q> R(2*twok);
@@ -377,12 +376,12 @@ namespace madness {
                 Rm = Tensor<Q>(2*k,2*k);
                 if (n>0) Rm(s0,s0)=rnlij(n-1,lx_half);
                 {
-                    PROFILE_BLOCK(Convolution1D_nstran);
+                    // PROFILE_BLOCK(Convolution1D_nstran); // Too fine grain for routine profiling
                     Rm = transform(Rm,hg);
                 }
 
                 {
-                    PROFILE_BLOCK(Convolution1D_nscopy);
+                    // PROFILE_BLOCK(Convolution1D_nscopy); // Too fine grain for routine profiling
                     T=Tensor<Q>(k,k);
                     if (t_off==0 and s_off==0) T=copy(Rm(s0,s0));
                     if (t_off==0 and s_off==1) T=copy(Rm(s0,s1));
@@ -395,7 +394,7 @@ namespace madness {
                 }
 
                 {
-                    PROFILE_BLOCK(Convolution1D_trans);
+                    // PROFILE_BLOCK(Convolution1D_trans); // Too fine grain for routine profiling
 
                     Tensor<Q> RT(k,k), TT(k,k);
                     fast_transpose(k,k,R.ptr(), RT.ptr());
@@ -415,7 +414,7 @@ namespace madness {
             const ConvolutionData1D<Q>* p = ns_cache.getptr(n,lx);
             if (p) return p;
 
-            PROFILE_MEMBER_FUNC(Convolution1D);
+            // PROFILE_MEMBER_FUNC(Convolution1D); // Too fine grain for routine profiling
 
             Tensor<Q> R, T;
             if (!get_issmall(n, lx)) {
@@ -435,7 +434,7 @@ namespace madness {
 //                 R(s0,s1) = rm;
 
                 {
-                    PROFILE_BLOCK(Convolution1D_nscopy);
+                    // PROFILE_BLOCK(Convolution1D_nscopy); // Too fine grain for routine profiling
                     copy_2d_patch(R.ptr(),           2*k, r0.ptr(), k, k, k);
                     copy_2d_patch(R.ptr()+2*k*k + k, 2*k, r0.ptr(), k, k, k);
                     copy_2d_patch(R.ptr()+2*k*k,     2*k, rp.ptr(), k, k, k);
@@ -446,14 +445,14 @@ namespace madness {
 
 
                 {
-                    PROFILE_BLOCK(Convolution1D_nstran);
+                    // PROFILE_BLOCK(Convolution1D_nstran); // Too fine grain for routine profiling
                     R = transform(R,hgT);
                 }
 
                 //print("RX", n, lx, R.normf(), r0.normf(), rp.normf(), rm.normf());
 
                 {
-                    PROFILE_BLOCK(Convolution1D_trans);
+                    // PROFILE_BLOCK(Convolution1D_trans); // Too fine grain for routine profiling
 
                     Tensor<Q> RT(2*k,2*k);
                     fast_transpose(2*k, 2*k, R.ptr(), RT.ptr());
@@ -487,7 +486,7 @@ namespace madness {
             const Tensor<Q>* p=rnlp_cache.getptr(n,lx);
             if (p) return *p;
 
-            PROFILE_MEMBER_FUNC(Convolution1D);
+            // PROFILE_MEMBER_FUNC(Convolution1D); // Too fine grain for routine profiling
 
             long twok = 2*k;
             Tensor<Q> r;
@@ -504,7 +503,7 @@ namespace madness {
                 r = copy(R(Slice(0,twok-1)));
             }
             else {
-                PROFILE_BLOCK(Convolution1Drnlp);
+                // PROFILE_BLOCK(Convolution1Drnlp); // Too fine grain for routine profiling
 
                 if (maxR > 0) {
                     Translation twon = Translation(1)<<n;
@@ -593,14 +592,14 @@ namespace madness {
     class GenericConvolution1D : public Convolution1D<Q> {
     private:
         opT op;
-        long maxl;    //< At natural level is l beyond which operator is zero
+        long maxl;    ///< At natural level is l beyond which operator is zero
     public:
 
         GenericConvolution1D() {}
 
         GenericConvolution1D(int k, const opT& op, int maxR, double arg = 0.0)
             : Convolution1D<Q>(k, 20, maxR, arg), op(op), maxl(LONG_MAX-1) {
-            PROFILE_MEMBER_FUNC(GenericConvolution1D);
+            // PROFILE_MEMBER_FUNC(GenericConvolution1D); // Too fine grain for routine profiling
 
             // For efficiency carefully compute outwards at the "natural" level
             // until several successive boxes are determined to be zero.  This

@@ -225,7 +225,7 @@ namespace madness {
                                   const Q mufac,
                                   Tensor<R>& result) const {
 
-            PROFILE_MEMBER_FUNC(SeparatedConvolution);
+            //PROFILE_MEMBER_FUNC(SeparatedConvolution); // Too fine grain for routine profiling
             long size = 1;
             for (std::size_t i=0; i<NDIM; ++i) size *= dimk;
             long dimi = size/dimk;
@@ -291,7 +291,7 @@ namespace madness {
                                   const Q mufac,
                                   Tensor<R>& result) const {
 
-            PROFILE_MEMBER_FUNC(SeparatedConvolution);
+            //PROFILE_MEMBER_FUNC(SeparatedConvolution); // Too fine grain for routine profiling
 
             Tensor<R> result2=general_transform(f,trans2);
             result2.scale(mufac);
@@ -312,7 +312,7 @@ namespace madness {
                                   const Q mufac,
                                   GenTensor<R>& result) const {
 
-            PROFILE_MEMBER_FUNC(SeparatedConvolution);
+            //PROFILE_MEMBER_FUNC(SeparatedConvolution); // Too fine grain for routine profiling
 
 #if 1
             result=general_transform(f,trans2);
@@ -380,7 +380,7 @@ namespace madness {
                          Tensor<TENSOR_RESULT_TYPE(T,Q)>& work2,
                          Tensor<Q>& work5) const {
 
-            PROFILE_MEMBER_FUNC(SeparatedConvolution);
+            //PROFILE_MEMBER_FUNC(SeparatedConvolution); // Too fine grain for routine profiling
             Transformation trans[NDIM];
             Tensor<T> trans2[NDIM];
 
@@ -654,7 +654,7 @@ namespace madness {
 
         /// use ConvolutionND, which uses ConvolutionData1D to collect the transformation matrices
         const SeparatedConvolutionInternal<Q,NDIM> getmuop(int mu, Level n, const Key<NDIM>& disp) const {
-            PROFILE_MEMBER_FUNC(SeparatedConvolution);
+            //PROFILE_MEMBER_FUNC(SeparatedConvolution); // Too fine grain for routine profiling
             SeparatedConvolutionInternal<Q,NDIM> op;
             for (std::size_t d=0; d<NDIM; ++d) {
                 op.ops[d] = ops[mu].getop(d)->nonstandard(n, disp.translation()[d]);
@@ -681,10 +681,9 @@ namespace madness {
         /// get the transformation matrices for 1 term and all dimensions and one displacement
 
         /// use ConvolutionND, which uses ConvolutionData1D to collect the transformation matrices
-        /// @param[in]  key displacement and the modulus of the source translation
         const SeparatedConvolutionInternal<Q,NDIM>
         getmuop_modified(int mu, Level n, const Key<NDIM>& disp, const Key<NDIM>& source) const {
-            PROFILE_MEMBER_FUNC(SeparatedConvolution);
+            //PROFILE_MEMBER_FUNC(SeparatedConvolution); // Too fine grain for routine profiling
 
 
             // SeparatedConvolutionInternal keeps data for 1 term and all dimensions
@@ -725,7 +724,7 @@ namespace madness {
         /// @param[in]  d   displacement
         /// @return pointer to cached operator
         const SeparatedConvolutionData<Q,NDIM>* getop_ns(Level n, const Key<NDIM>& d) const {
-            PROFILE_MEMBER_FUNC(SeparatedConvolution);
+            //PROFILE_MEMBER_FUNC(SeparatedConvolution); // Too fine grain for routine profiling
             const SeparatedConvolutionData<Q,NDIM>* p = data.getptr(n,d);
             if (p) return p;
 
@@ -759,7 +758,7 @@ namespace madness {
         /// @param[in]  source  source key
         /// @return pointer to cached operator
         const SeparatedConvolutionData<Q,NDIM>* getop_modified(Level n, const Key<NDIM>& disp, const Key<NDIM>& source) const {
-            PROFILE_MEMBER_FUNC(SeparatedConvolution);
+            //PROFILE_MEMBER_FUNC(SeparatedConvolution); // Too fine grain for routine profiling
 
             // in the modified NS form the upsampled part of the operator depends on the modulus of the source
             Vector<Translation,NDIM> t=source.translation();
@@ -1116,7 +1115,7 @@ namespace madness {
                                               const Key<NDIM>& shift,
                                               const Tensor<T>& coeff,
                                               double tol) const {
-            PROFILE_MEMBER_FUNC(SeparatedConvolution);
+            //PROFILE_MEMBER_FUNC(SeparatedConvolution); // Too fine grain for routine profiling
             MADNESS_ASSERT(coeff.ndim()==NDIM);
 
             double cpu0=cpu_time();
@@ -1188,7 +1187,7 @@ namespace madness {
         /// note the unfortunate mess with NDIM: here NDIM is the operator dimension, and FDIM is the
         /// function's dimension, whereas in the function we have OPDIM for the operator and NDIM for
         /// the function
-        /// @tparam FDIM        the dimension of the function this operator is applied on
+        /// @tparam T   the dimension of the function this operator is applied on. \todo MGR: Make sure info on T is correct. Was previously labeled FDIM.
         /// @param[in]  coeff   source coeffs in SVD (=optimal!) form, in high dimensionality (FDIM)
         /// @param[in]  source  the source key in low dimensionality (NDIM)
         /// @param[in]  shift   the displacement in low dimensionality (NDIM)

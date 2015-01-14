@@ -171,10 +171,10 @@ public:
         double ftol = 1e-12;
 
         double x1 = c1[0]; double y1 = c1[1]; double z1 = c1[2];
-        double x2 = c2[0]; double y2 = c1[1]; double z2 = c1[2];
+        double x2 = c2[0]; double y2 = c2[1]; double z2 = c2[2];
 
         // if center is inside box, then return false
-        // otherwise, look for the closests point and check
+        // otherwise, look for the closest point and check
         bool inside = (center[0] >= x1) && (center[0] <= x2) &&
                       (center[1] >= y1) && (center[1] <= y2) &&
                       (center[2] >= z1) && (center[2] <= z2);
@@ -209,7 +209,7 @@ public:
             double y = (jj == 0) ? c1[1] : c2[1]; 
             double z = (kk == 0) ? c1[2] : c2[2]; 
             double fval = this->operator()(vec(x, y, z));
-            if (fval < ftol) return true;
+            if (fabs(fval) < ftol) return true;
             else return false;
         }
     }
@@ -514,7 +514,6 @@ public:
 
 
     std::vector<Function<Q,3> > apply_potential(World& world, const real_function_3d& potential, const std::vector<Function<Q,3> >& psi, const tensorT & occ, Q & enl) {
-        bool debug = (world.rank() == 0) && false;
         double thresh = FunctionDefaults<3>::get_thresh();
         double vtol = 1e-2*thresh;
         std::vector<Function<Q,3> > vpsi = mul_sparse(world,(potential), psi, vtol);
@@ -547,7 +546,7 @@ public:
             coord_3d center = atom.get_coords();
             unsigned int atype = atom.atomic_number;
             real_tensor& atom_radii = radii[atype-1];
-            real_tensor& atom_hlij = hlij[atype-1];
+            //real_tensor& atom_hlij = hlij[atype-1];
 
             // Create function stores for projectors
             ProjRLMStore prlmstore(atom_radii, center);
@@ -626,12 +625,11 @@ public:
     }
 
     std::vector<Function<Q,3> > apply_potential_simple(World& world, const real_function_3d& potential, const std::vector<Function<Q,3> >& psi, const tensorT & occ, Q & enl) {
-        bool debug = (world.rank() == 0) && false;
         double thresh = FunctionDefaults<3>::get_thresh();
         double vtol = 1e-2*thresh;
         std::vector<Function<Q,3> > vpsi = mul_sparse(world,(potential), psi, vtol);
 
-        unsigned int norbs = psi.size();
+        //unsigned int norbs = psi.size();
         unsigned int natoms = atoms_with_projectors.size();
 
         for (unsigned int iatom = 0; iatom < natoms; iatom++) {
