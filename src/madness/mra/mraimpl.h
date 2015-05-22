@@ -41,7 +41,7 @@
 
 //#define WORLD_INSTANTIATE_STATIC_TEMPLATES
 #include <math.h>
-#include <madness/world/worldobj.h>
+#include <madness/world/world_object.h>
 #include <madness/world/worlddc.h>
 #include <madness/world/worldhashmap.h>
 #include <madness/mra/function_common_data.h>
@@ -661,12 +661,6 @@ namespace madness {
     
     /// Directly project parent NS coeffs to child NS coeffs
     
-    /// return the NS coefficients if parent and child are the same,
-    /// or construct sum coeffs from the parents and "add" zero wavelet coeffs
-    /// @param[in]	child	the key whose coeffs we are requesting
-    /// @param[in]	parent	the (leaf) key of our function
-    /// @param[in]	coeff	the (leaf) coeffs belonging to parent
-    /// @return 	coeffs in NS form
     template <typename T, std::size_t NDIM>
     typename FunctionImpl<T,NDIM>::coeffT FunctionImpl<T,NDIM>::parent_to_child_NS(const keyT& child, const keyT& parent,
                                                                                    const coeffT& coeff) const {
@@ -1602,27 +1596,12 @@ namespace madness {
         // and we must not truncate; so just return empty coeffs again
         for (size_t i=0; i<v.size(); ++i) if (v[i].get().has_no_data()) return coeffT();
         
+        // do not truncate below level 1
+        if (key.level()<2) return coeffT();
+
+        // compute the wavelet coefficients from the child nodes
         typename dcT::accessor acc;
         MADNESS_ASSERT(coeffs.find(acc, key));
-        
-        //
-        // !! THIS IS NO NUMERICALLY STABLE CODE !!
-        //
-#if 0
-        // the sum coefficients on this level, and their norm
-        const tensorT s=downsample(key,v);
-        const double snorm=s.normf();
-        
-        // get the norm of all child coefficients
-        double dnorm=0.0;
-        for (size_t i=0; i<v.size(); ++i) {
-            const double d=v[i].get().normf();
-            dnorm+=d*d;
-        }
-        
-        // the error; equivalent to the norm of the wavelet coefficients
-        const double error=sqrt(dnorm-snorm*snorm);
-#else
         int i=0;
         tensorT d(cdata.v2k);
         for (KeyChildIterator<NDIM> kit(key); kit; ++kit,++i) {
@@ -1634,8 +1613,7 @@ namespace madness {
         tensorT s=copy(d(cdata.s0));
         d(cdata.s0) = 0.0;
         const double error=d.normf();
-        
-#endif
+
         nodeT& node = coeffs.find(key).get()->second;
         
         if (error < truncate_tol(tol,key)) {
@@ -2074,12 +2052,6 @@ namespace madness {
         return fval;
     }
     
-    /// return the values of a Function on a grid
-    
-    /// @param[in]  key the key indicating where the quadrature points are located
-    /// @param[in]  f   the interface to the elementary function
-    /// @param[in]  qx  quadrature points on a level=0 box
-    /// @param[out] fval    values
     template <typename T, std::size_t NDIM>
     //    void FunctionImpl<T,NDIM>::fcube(const keyT& key, const FunctionFunctorInterface<T,NDIM>& f, const Tensor<double>& qx, tensorT& fval) const {
     void fcube(const Key<NDIM>& key, const FunctionFunctorInterface<T,NDIM>& f, const Tensor<double>& qx, Tensor<T>& fval) {
@@ -2098,7 +2070,7 @@ namespace madness {
   
         // Do pre-screening of the FunctionFunctorInterface, f, before calculating f(r) at quadrature points
         coordT c1, c2;
-        for (int i = 0; i < NDIM; i++) {
+        for (std::size_t i = 0; i < NDIM; i++) {
           c1[i] = cell(i,0) + h*cell_width[i]*(l[i] + qx((long)0));
           c2[i] = cell(i,0) + h*cell_width[i]*(l[i] + qx(npt-1));
         }
@@ -2668,9 +2640,9 @@ namespace madness {
         tensorT fval(cdata.vq,false); // this will be the returned result
         tensorT work(cdata.vk,false); // initially evaluate the function in here
         tensorT workq(cdata.vq,false); // initially evaluate the function in here
-        
+       
+        // compute the values of the functor at the quadrature points and scale appropriately
         madness::fcube(key,*functor,cdata.quad_x,work);
-        
         work.scale(sqrt(FunctionDefaults<NDIM>::get_cell_volume()*pow(0.5,double(NDIM*key.level()))));
         //return transform(work,cdata.quad_phiw);
         return fast_transform(work,cdata.quad_phiw,fval,workq);
