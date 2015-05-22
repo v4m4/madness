@@ -190,7 +190,8 @@ public:
 class PotentialBasisFunctor : public FunctionFunctorInterface<double,3> {
     int n;
     double alpha, rcut;
-    double rn;
+    /// \todo Check `rn`. Should it be a member or is it only used locally?
+    //double rn;
 public:
     PotentialBasisFunctor (int n, double alpha, double rcut) : n(n), alpha(alpha), rcut(rcut) {}
     double operator() (const coordT& x) const {
@@ -506,8 +507,7 @@ struct Calculation {
     vecfuncT make_reference (World & world, vecfuncT & mo, tensorT & occ)
     {
         int nv = mo.size() - ncore;
-        vecfuncT vmo = zero_functions<double,3>(world, nv);
-        compress(world, vmo);
+        vecfuncT vmo = zero_functions_compressed<double,3>(world, nv);
         reconstruct(world, amo);
         norm_tree(world, amo);
         if (!spin_restricted && bmo.size()) {
@@ -903,8 +903,6 @@ struct CoreFittingTarget : public OptimizationTargetInterface {
 class MySteepestDescent : public OptimizerInterface {
     std::shared_ptr<OptimizationTargetInterface> target;
     const double tol;
-    const double value_precision;  // Numerical precision of value
-    const double gradient_precision; // Numerical precision of each element of residual
     double f;
     double gnorm;
 
@@ -915,8 +913,6 @@ class MySteepestDescent : public OptimizerInterface {
             double gradient_precision = 1e-12)
         : target(target)
           , tol(tol)
-          , value_precision(value_precision)
-          , gradient_precision(gradient_precision)
           , gnorm(tol*1e16)
     {
         if (!target->provides_gradient()) throw "Steepest descent requires the gradient";

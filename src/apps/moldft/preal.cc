@@ -168,7 +168,6 @@ struct BoysLocalization {
                             const double thetamax = 0.5, 
                             const bool randomize = true)
     {
-        //TAU_START("Boys localize");
         //START_TIMER(world);
         const bool doprint = false;
         long nmo = mo.size();
@@ -292,7 +291,6 @@ struct BoysLocalization {
 
         world.gop.broadcast(U.ptr(), U.size(), 0);
         //END_TIMER(world, "Boys localize");
-        //TAU_STOP("Boys localize");
         return U;
     }
 };
@@ -323,7 +321,7 @@ public:
 	//xc_data="GGA_X_PBE 1.";
 	//xc_data="GGA_C_PBE 1.";
 	//xc_data="GGA_X_B88 1.";
-	xc.initialize(xc_data, false);
+	xc.initialize(xc_data, false, world);
     }
 
     // Make the atomic basis functions

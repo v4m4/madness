@@ -36,22 +36,40 @@
 /// \brief Molecular HF and DFT code
 /// \defgroup moldft The molecular density funcitonal and Hartree-Fock code
 
-
 #include <chem/SCF.h>
+
+#if defined(HAVE_SYS_TYPES_H) && defined(HAVE_SYS_STAT_H) && defined(HAVE_UNISTD_H)
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+static inline int file_exists(const char * inpname)
+{
+    struct stat buffer;
+    int rc = stat(inpname, &buffer);
+    return (rc==0);
+}
+#endif
 
 using namespace madness;
 
-int main(int argc, char** argv) {
-    TAU_START("main()");
-    TAU_START("initialize()");
-    initialize(argc, argv);
-    TAU_STOP("initialize()");
 
-    TAU_START("World lifetime");
+    static double ttt, sss;
+    static void START_TIMER(World& world) {
+        world.gop.fence(); ttt=wall_time(); sss=cpu_time();
+    }
+    
+    static void END_TIMER(World& world, const char* msg) {
+        ttt=wall_time()-ttt; sss=cpu_time()-sss; if (world.rank()==0) printf("timer: %20.20s %8.2fs %8.2fs\n", msg, sss, ttt);
+    }
+
+int main(int argc, char** argv) {
+
+    initialize(argc, argv);
+
     { // limit lifetime of world so that finalize() can execute cleanly
       World world(SafeMPI::COMM_WORLD);
-
       try {
+        START_TIMER(world);
         // Load info for MADNESS numerical routines
         startup(world,argc,argv);
 	print_meminfo(world.rank(), "startup");
@@ -67,7 +85,12 @@ int main(int argc, char** argv) {
                 break;
             }
         }
-        if (world.rank() == 0) print(inpname);
+        if (!file_exists(inpname)) {
+            throw "input file not found!";
+        }
+        else {
+            if (world.rank() == 0) print("Input filename: ", inpname);
+        }
         SCF calc(world, inpname);
 
         // Warm and fuzzy for the user
@@ -80,6 +103,7 @@ int main(int argc, char** argv) {
           print("\n");
           calc.param.print(world);
         }
+        END_TIMER(world, "initialize");
 
         // Come up with an initial OK data map
         if (world.size() > 1) {
@@ -87,9 +111,8 @@ int main(int argc, char** argv) {
           calc.make_nuclear_potential(world);
           calc.initial_load_bal(world);
         }
-//vama
-        calc.set_protocol<3>(world,calc.param.protocol_data[0]);
 
+        calc.set_protocol<3>(world,calc.param.protocol_data[0]);
 
         if ( calc.param.gopt) {
           print("\n\n Geometry Optimization                      ");
@@ -117,10 +140,21 @@ int main(int argc, char** argv) {
           calc.propagate(world,0.1,0);
         }
         else {
+          print("\n\n DFT/HF Energy & Gradients Calculation equation          ");
+          print(" ----------------------------------------------------------\n");
           MolecularEnergy E(world, calc);
           E.value(calc.molecule.get_all_coords().flat()); // ugh!
-          if (calc.param.derivatives) calc.derivatives(world);
-          if (calc.param.dipole) calc.dipole(world);
+
+          functionT rho = calc.make_density(world, calc.aocc, calc.amo);
+          functionT brho = rho;
+          if (!calc.param.spin_restricted)
+              brho = calc.make_density(world, calc.bocc, calc.bmo);
+          rho.gaxpy(1.0, brho, 1.0);
+
+          if (calc.param.derivatives) calc.derivatives(world,rho);
+          if (calc.param.dipole) calc.dipole(world,rho);
+          if (calc.param.response) calc.polarizability(world);
+
         }
 
         //        if (calc.param.twoint) {
@@ -168,9 +202,8 @@ int main(int argc, char** argv) {
       world.gop.fence();
       print_stats(world);
     } // world is dead -- ready to finalize
-    TAU_STOP("World lifetime");
     finalize();
-    TAU_STOP("main()");
 
     return 0;
 }
+
