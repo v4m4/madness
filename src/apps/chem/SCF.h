@@ -50,6 +50,7 @@
 #include <chem/xcfunctional.h>
 #include <chem/potentialmanager.h>
 #include <chem/gth_pseudopotential.h> 
+#include <chem/projector.h>
 
 #include <madness/tensor/solvers.h>
 #include <madness/tensor/distributed_matrix.h>
@@ -297,6 +298,7 @@ struct CalculationParameters {
     bool derivatives;           ///< If true calculate derivatives
     bool dipole;                ///< If true calculate dipole moment
     bool conv_only_dens;        ///< If true remove bsh_residual from convergence criteria   how ugly name is...
+    bool psp_calc;                ///< pseudopotential calculation for all atoms
     // Next list inferred parameters
     int nalpha;                 ///< Number of alpha spin electrons
     int nbeta;                  ///< Number of beta  spin electrons
@@ -314,7 +316,14 @@ struct CalculationParameters {
     std::string algopt;         ///< algorithm used for optimization
     bool tdksprop;               ///< time-dependent Kohn-Sham equation propagate
     std::string nuclear_corrfac;	///< nuclear correlation factor
-    bool psp_calc;                ///< pseudopotential calculation or all electron
+    bool pure_ae;                 ///< pure all electron calculation with no pseudo-atoms
+
+    bool response;           ///< response function calculation
+    double response_freq;       ///< Frequency for calculation response function
+    bool nonrotate;             ///< If true do not molcule orient
+    double rconv;               ///< Response convergence
+    double efield;                ///< eps for finite field
+    double efield_axis;       ///< eps for finite field axis
 
     template <typename Archive>
     void serialize(Archive& ar) {
@@ -325,7 +334,13 @@ struct CalculationParameters {
         ar & nalpha & nbeta & nmo_alpha & nmo_beta & lo;
         ar & core_type & derivatives & conv_only_dens & dipole;
         ar & xc_data & protocol_data;
-        ar & gopt & gtol & gtest & gval & gprec & gmaxiter & algopt & tdksprop & psp_calc;
+        ar & gopt & gtol & gtest & gval & gprec & gmaxiter & algopt & tdksprop & nuclear_corrfac & psp_calc & pure_ae;
+        ar & response;
+        ar & response_freq;
+        ar & nonrotate;
+        ar & rconv;
+        ar & efield;
+        ar & efield_axis;
     }
 
     CalculationParameters()
@@ -360,6 +375,7 @@ struct CalculationParameters {
         , derivatives(false)
         , dipole(false)
         , conv_only_dens(false)
+        , psp_calc(false)
         , nalpha(0)
         , nbeta(0)
         , nmo_alpha(0)
@@ -376,7 +392,13 @@ struct CalculationParameters {
         , algopt("BFGS")
         , tdksprop(false)
         , nuclear_corrfac("none")
-        , psp_calc(false)
+        , pure_ae(true)
+        , response(false)
+        , response_freq(0.0)
+        , nonrotate(false)
+        , rconv(1e-6)
+        , efield(0.0)
+        , efield_axis(0)
     {}
 
 
@@ -544,9 +566,11 @@ struct CalculationParameters {
                 f >> gmaxiter;
             }
             else if (s == "algopt") {
-                char buf[1024];
-                f.getline(buf,sizeof(buf));
-                algopt = buf;
+                f >> algopt;
+
+//                char buf[1024];
+//                f.getline(buf,sizeof(buf));
+//                algopt = buf;
             }
             else if (s == "tdksprop") {
               tdksprop = true;
@@ -558,6 +582,36 @@ struct CalculationParameters {
             }
             else if (s == "psp_calc") {
               psp_calc = true;
+              pure_ae = false;
+            }
+            else if (s == "response") {
+              response = true;
+            }
+            else if (s == "response_freq") {
+              double freq;
+              f >> freq;
+                response_freq = freq;
+            }
+            else if (s == "nonrotate") {
+              nonrotate = true; 
+            }
+            else if (s == "rconv") {
+                f >> rconv;
+            }
+            else if (s == "efield") {
+                f >> efield;
+            }
+            else if (s == "efield_axis") {
+              std::string axis;
+              f >> axis;
+              if(axis == "x")
+                  efield_axis = 0;
+              else if (axis == "y") 
+                  efield_axis = 1;
+              else if (axis == "z") 
+                  efield_axis = 2;
+              else if (axis == "none") 
+                  efield_axis = -1;
             }
             else {
                 std::cout << "moldft: unrecognized input keyword " << s << std::endl;
@@ -658,6 +712,27 @@ struct CalculationParameters {
             madness::print("    calc derivatives ");
         if (dipole)
             madness::print("         calc dipole ");
+        if (psp_calc)
+            madness::print(" psp or all electron ", "pseudopotential");
+        else if (pure_ae)
+            madness::print(" psp or all electron ", "all electron");
+        else
+            madness::print(" psp or all electron ", "mixed psp/AE");
+        if (response){
+            madness::print(" response frequency  ", response_freq);
+            madness::print(" response convergence ", rconv);
+        }
+        if (efield != 0.0){
+              std::string axis;
+              if(efield_axis == 0)
+                  axis = "x";
+              if(efield_axis == 1)
+                  axis = "y";
+              if(efield_axis == 2)
+                  axis = "z";
+              madness::print(" Elec. Field in axis  ", axis);
+              madness::print(" Elec. Field intensity axis  ", efield);
+        }
     }
 
     void gprint(World& world) const {
@@ -737,7 +812,7 @@ public:
         FunctionDefaults<NDIM>::set_thresh(thresh);
         FunctionDefaults<NDIM>::set_refine(true);
         FunctionDefaults<NDIM>::set_initial_level(2);
-        FunctionDefaults<NDIM>::set_truncate_mode(1);
+//        FunctionDefaults<NDIM>::set_truncate_mode(1);
         FunctionDefaults<NDIM>::set_autorefine(false);
         FunctionDefaults<NDIM>::set_apply_randomize(false);
         FunctionDefaults<NDIM>::set_project_randomize(false);
@@ -831,6 +906,14 @@ public:
     functionT make_lda_potential(World & world, const functionT & arho);
 
 
+    functionT make_dft_kxc(World & world, const vecfuncT& vf, int ispin, int what)
+    {
+        return multiop_values<double, xc_kxc, 3>(xc_kxc(xc, ispin, what), vf);
+    }
+    functionT make_dft_fxc(World & world, const vecfuncT& vf, int ispin, int what)
+    {
+        return multiop_values<double, xc_fxc, 3>(xc_fxc(xc, ispin, what), vf);
+    }
     functionT make_dft_potential(World & world, const vecfuncT& vf, int ispin, int what)
     {
         return multiop_values<double, xc_potential, 3>(xc_potential(xc, ispin, what), vf);
@@ -846,9 +929,71 @@ public:
 			const vecfuncT & amo, const vecfuncT& vf, const vecfuncT& delrho,
 			const functionT & vlocal, double & exc, double & enl, int ispin);
 
-    tensorT derivatives(World & world);
+    tensorT derivatives(World & world, const functionT& rho) const;
 
-    tensorT dipole(World & world);
+    /// compute the total dipole moment of the molecule
+
+    /// @param[in]  rho the total (alpha + beta) density
+    /// @return     the x,y,z components of the el. + nucl. dipole moment
+    tensorT dipole(World & world, const functionT& rho) const;
+
+    void update_response_subspace(World & world,
+                         vecfuncT & ax, vecfuncT & ay,
+                         vecfuncT & bx, vecfuncT & by,
+                         vecfuncT & rax, vecfuncT & ray,
+                         vecfuncT & rbx, vecfuncT & rby,
+                         subspaceT & subspace, tensorT & Q, double & update_residual);
+
+
+    vecfuncT apply_potential_response(World & world, const tensorT & occ, const vecfuncT & dmo,
+                             const vecfuncT& vf, const vecfuncT& delrho,  const functionT & vlocal,
+                             double & exc, 
+                             int ispin);
+    void this_axis(World & world, int & axis);
+    vecfuncT calc_dipole_mo(World & world,  vecfuncT & mo, int & axis);
+    void calc_freq(World & world, double & omega, tensorT & ak, tensorT & bk, int sign);
+    void make_BSHOperatorPtr(World & world, tensorT & ak, tensorT & bk,
+            std::vector<poperatorT> & aop, std::vector<poperatorT> & bop);
+    functionT make_density_ground(World & world, functionT & arho, functionT & brho);
+
+    functionT make_derivative_density(World & world, const vecfuncT & mo, 
+                                     const tensorT & occ , 
+                                     const vecfuncT & x, const vecfuncT & y);
+    functionT calc_exchange_function(World & world,  const int & p,
+             const vecfuncT & dmo1,  const vecfuncT & dmo2,
+             const vecfuncT & mo, int & spin);
+    vecfuncT calc_xc_function(World & world, 
+             const vecfuncT & mo,  const vecfuncT & vf,  const functionT & drho, int & spin);
+    vecfuncT calc_djkmo(World & world, const vecfuncT & dmo1, 
+                        const vecfuncT & dmo2,  const functionT & drho, const vecfuncT & mo,  
+                        const vecfuncT & vf,
+                        const functionT & drhos,
+                        int  spin);
+    vecfuncT calc_rhs(World & world, const vecfuncT & mo , 
+                     const vecfuncT & Vdmo, 
+                     const vecfuncT & dipolemo, const vecfuncT & djkmo );
+    void calc_response_function(World & world, vecfuncT & dmo, 
+            std::vector<poperatorT> & op, vecfuncT & rhs);
+    void orthogonalize_response(World & world, vecfuncT & dmo, vecfuncT & mo );
+
+    void dpolar(World & world, tensorT & polar, functionT & drho, int & axis);
+
+    void calc_dpolar(World & world,  
+            const vecfuncT & ax, const vecfuncT & ay, 
+            const vecfuncT & bx, const vecfuncT & by, 
+            int & axis,
+            tensorT & Dpolar_total, tensorT & Dpolar_alpha, tensorT & Dpolar_beta);
+    double residual_response(World & world, const vecfuncT & x,const  vecfuncT & y,
+                             const vecfuncT & x_old, const vecfuncT & y_old,
+                             vecfuncT & rx, vecfuncT & ry);
+
+    void polarizability(World & world);
+
+
+
+
+    void dipole_matrix_elements(World & world, const vecfuncT & mo, const tensorT & occ = tensorT(),
+    		const tensorT & energy = tensorT(), int spin=0);
 
     void vector_stats(const std::vector<double> & v, double & rms,
     		double & maxabsval) const;
@@ -1002,6 +1147,7 @@ public:
 		if (calc.param.no_compute) {
 			calc.load_mos(world);
 			calc.make_nuclear_potential(world);
+			calc.project_ao_basis(world);
 			return calc.current_energy;
 			}
 
@@ -1045,7 +1191,14 @@ public:
     madness::Tensor<double> gradient(const Tensor<double>& x) {
         value(x); // Ensures DFT equations are solved at this geometry
 
-        return calc.derivatives(world);
+
+        functionT rho = calc.make_density(world, calc.aocc, calc.amo);
+        functionT brho = rho;
+        if (!calc.param.spin_restricted)
+            brho = calc.make_density(world, calc.bocc, calc.bmo);
+        rho.gaxpy(1.0, brho, 1.0);
+
+        return calc.derivatives(world,rho);
     }
 };
 }
