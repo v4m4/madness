@@ -39,6 +39,8 @@
 /*!
  \file worldhash.h
  \brief Defines hash functions for use in distributed containers
+ \addtogroup hashing
+ @{
 
 MADNESS uses hashing functions are modeled after Boost.Functional/Hash. It has
 many similar function calls including hash_value, hash_combine, and hash_range.
@@ -128,7 +130,6 @@ provide the appropriate template parameter to the hashing container.
 */
 
 #include <madness/madness_config.h>
-#include <madness/world/typestuff.h>
 #include <madness/world/enable_if.h>
 #include <stdint.h>
 #include <cstddef>
@@ -356,5 +357,6 @@ namespace madness {
 
 } // namespace madness
 
+///@}
 
 #endif // MADNESS_WORLD_WORLDHASH_H__INCLUDED

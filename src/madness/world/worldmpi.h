@@ -38,6 +38,8 @@
 
 /// \file worldmpi.h
 /// \brief Implements WorldMpiInterface
+/// \addtogroup mpi
+///@{
 
 /*
 // If include mpi.h BEFORE stdio/iostream should not need undefs
@@ -54,7 +56,6 @@
 
 #include <madness/world/safempi.h>
 #include <madness/world/worldtypes.h>
-#include <madness/world/shared_ptr.h>
 #include <cstdlib>
 
 
@@ -355,5 +356,7 @@ namespace madness {
     }; // class WorldMpiInterface
 
 }
+
+///@}
 
 #endif // MADNESS_WORLD_WORLDMPI_H__INCLUDED
