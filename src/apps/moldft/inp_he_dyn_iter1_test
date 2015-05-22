@@ -1,0 +1,17 @@
+dft
+  protocol 1e-6
+  xc HF
+  canon
+  response
+  response_freq 0.0
+  rconv 1e-4
+  no_orient
+  maxiter 100
+  maxsub 5
+end
+
+geometry
+  units angs
+ eprec 1e-6
+He     0.000000     0.000000     0.000000
+end
