@@ -5,8 +5,8 @@
 #include <string>
 #include <sstream>
 #include <utility>
-#include <madness/world/worldexc.h>
-#include <madness/world/world.h>
+#include <madness/world/madness_exception.h>
+#include <madness/world/parallel_runtime.h>
 #include <xc.h>
 #include <xc_funcs.h>
 
@@ -247,17 +247,16 @@ void XCfunctional::initialize(const std::string& input_line, bool polarized, Wor
     hf_coeff = 0.0;
     funcs.clear();
 
-    if (world.rank() == 0) std::printf("Construct XC Functional from LIBXC Library");
+    // DEBUG if (world.rank() == 0) std::printf("Construct XC Functional from LIBXC Library");
     while (line >> name) {
         std::transform(name.begin(), name.end(), name.begin(), ::toupper);
-        if (world.rank() == 0) std::cout <<"!NAME! "<< name << "pol " << polarized << std::endl;
+        // DEBUG if (world.rank() == 0) std::cout <<"!NAME! "<< name << "pol " << polarized << std::endl;
         if (name == "LDA") {
             //if (! (line >> factor)) factor = 1.0;
             funcs.push_back(std::make_pair(lookup_func("LDA_X",polarized),1.0));
             funcs.push_back(std::make_pair(lookup_func("LDA_C_VWN",polarized),1.0));
         }
         else if (name == "RHOMIN") {
-        	std::cout << "hello" << std::endl;
             line >> rhomin;
         }
         else if (name == "RHOTOL") {
@@ -284,9 +283,9 @@ void XCfunctional::initialize(const std::string& input_line, bool polarized, Wor
         if (funcs[i].first->info->family == XC_FAMILY_HYB_GGA) nderiv = std::max(nderiv,1);
         if (funcs[i].first->info->family == XC_FAMILY_MGGA)nderiv = std::max(nderiv,2);
  //       if (funcs[i].first->info->family == XC_FAMILY_LDA) nderiv = std::max(nderiv,0);
-        if (world.rank() == 0) std::cout << "factor " << i << "  " << funcs[i].second << std::endl;
+       // DEBUG if (world.rank() == 0) std::cout << "factor " << i << "  " << funcs[i].second << std::endl;
     }
-    if (world.rank() == 0) std::cout << "rhotol " << rhotol << " rhomin " << rhomin << " factor " <<factor << "hfcorf" <<hf_coeff <<  " input line was " << input_line << std::endl;
+        // DEBUG  if (world.rank() == 0) std::cout << "rhotol " << rhotol << " rhomin " << rhomin << " factor " <<factor << "hfcorf" <<hf_coeff <<  " input line was " << input_line << std::endl;
 }
 
 XCfunctional::~XCfunctional() {
@@ -325,8 +324,6 @@ bool XCfunctional::has_kxc() const
 
 
 /// Allocates rho (and if GGA also sigma) and copies data from t[] into rho and sigma.
-//vama5void XCfunctional::make_libxc_args(const std::vector< madness::Tensor<double> >& t,
-//vama5                                   madness::Tensor<double>& rho, madness::Tensor<double>& sigma, madness::Tensor<double>& delrho) const
 void XCfunctional::make_libxc_args(const std::vector< madness::Tensor<double> >& t,
                                    madness::Tensor<double>& rho, madness::Tensor<double>& sigma) const
 {
@@ -377,7 +374,7 @@ void XCfunctional::make_libxc_args(const std::vector< madness::Tensor<double> >&
     }
     else {
         if (is_lda()) {
-            MADNESS_ASSERT(t.size() == 1);
+            MADNESS_ASSERT(t.size() >= 1);
             rho  = madness::Tensor<double>(np);
             const double * restrict rhoa = t[0].ptr();
             double * restrict dens = rho.ptr();
@@ -448,10 +445,11 @@ madness::Tensor<double> XCfunctional::exc(const std::vector< madness::Tensor<dou
         else {
             for (long j=0; j<np; j++) {
                 res[j] += work[j]*dens[j]*funcs[i].second;
+                //std::cout << "exc: " << j << " " << res[j] << " " << work[j] << " " << dens[j] << " " << sig[j] << " " << funcs[i].first << " " << funcs[i].second << std::endl;
             }
         }
     }
-
+    //std::cout << "result " << result << std::endl;
     return result;
 }
 
@@ -463,6 +461,8 @@ madness::Tensor<double> XCfunctional::vxc(const std::vector< madness::Tensor<dou
     const int np = t[0].size();
 
     int nvsig, nvrho;
+//rho[2*np],  sigma[3*np] 
+// vxc[2*np], vsigma[3*np]
     if (spin_polarized) {
     	nvrho = 2;
     	nvsig = 3;
@@ -497,6 +497,7 @@ madness::Tensor<double> XCfunctional::vxc(const std::vector< madness::Tensor<dou
 
              case XC_FAMILY_GGA:
     		{
+//void xc_gga_vxc(xc_func_type *p, int np, double *rho, double *sigma, double double *vrho, double *vsigma)
     	        madness::Tensor<double> vrho(nvrho*np), vsig(nvsig*np);
                 double * restrict vr = vrho.ptr();
                 double * restrict vs = vsig.ptr();
@@ -549,56 +550,7 @@ madness::Tensor<double> XCfunctional::vxc(const std::vector< madness::Tensor<dou
     		break;
      	case XC_FAMILY_HYB_GGA:
     	{
-    				throw "ouch";
-    		madness::Tensor<double> vrho(nvrho*np), vsig(nvsig*np);
-    		double * restrict vr = vrho.ptr();
-    		double * restrict vs = vsig.ptr();
-    		const double * restrict sig = sigma.ptr();
-    		xc_gga_vxc(funcs[i].first, np, dens, sig, vr, vs);
-	    	if (spin_polarized) {
-        		if (what == 0) {
-        			for (long j=0; j<np; j++) {
-    					res[j] += vr[nvrho*j+ispin]*funcs[i].second*.0;
-    					if (isnan_x(res[j])) throw "ouch";
-    				}
-    			}
-    			else if (what == 1) {
-    			// Vaa
-    				for (long j=0; j<np; j++) {
-    					res[j] += vs[nvsig*j + 2*ispin]*funcs[i].second*0.0;
-    					if (isnan_x(res[j])) throw "ouch";
-    				}
-    			}
-    			else if (what == 2) {
-    			// Vab
-    				for (long j=0; j<np; j++) {
-    					res[j] += vs[nvsig*j + 1]*funcs[i].second*.0;
-    					if (isnan_x(res[j])) throw "ouch";
-    				}
-    			}
-    			else {
-    				throw "ouch";
-    			}
-    		}
-    		else {
-    			if (what == 0) {
-    				for (long j=0; j<np; j++) {
-    					res[j] += vr[j]*funcs[i].second*.0;
-    					if (isnan_x(res[j])) throw "ouch";
-    				}
-    			}
-    			else if (what == 1) {
-    				throw "ouch";
-    			// Vaa
-    				for (long j=0; j<np; j++) {
-    					res[j] += vs[j]*funcs[i].second*.0;
-    					if (isnan_x(res[j])) throw "ouch";
-    				}
-    			}
-    			else {
-    				throw "ouch";
-    			}
-    		}
+   		throw "ouch XC_FAMILY_HYB_GGA vxc disabled" ;
     	}
     	break;
     	default:
@@ -610,19 +562,38 @@ madness::Tensor<double> XCfunctional::vxc(const std::vector< madness::Tensor<dou
 
 madness::Tensor<double> XCfunctional::fxc(const std::vector< madness::Tensor<double> >& t, const int ispin, const int what) const
 {
+/* Some useful formulas:
+   sigma_st = grad rho_s . grad rho_t
+   zk = energy density per unit particle
+   vrho_s = d zk / d rho_s
+   vsigma_st = d n*zk / d sigma_st
+   v2rho2_st = d^2 n*zk / d rho_s d rho_t
+   v2rhosigma_svx = d^2 n*zk / d rho_s d sigma_tv
+   v2sigma2_stvx = d^2 n*zk / d sigma_st d sigma_vx
+if nspin == 2
+   rho(2) = (u, d)
+   sigma(3) = (uu, du, dd)
+   vrho(2) = (u, d)
+   vsigma(3) = (uu, du, dd)
+   v2rho2(3) = (uu, du, dd)
+   v2rhosigma(6) = (u_uu, u_ud, u_dd, d_uu, d_ud, d_dd)
+   v2sigma2(6) = (uu_uu, uu_ud, uu_dd, ud_ud, ud_dd, dd_dd)
+*/
     madness::Tensor<double> rho, sigma;
     make_libxc_args(t, rho, sigma);
 
     const int np = t[0].size();
 
-    int nvsig, nvrho;
+    int nv2rho2, nv2rhosigma, nv2sigma2;
     if (spin_polarized) {
-    	nvrho = 2;
-    	nvsig = 3;
+    	nv2rho2 = 3;
+    	nv2rhosigma = 6;
+    	nv2sigma2 = 6;
     }
     else {
-    	nvrho = 1;
-    	nvsig = 1;
+    	nv2rho2 = 1;
+    	nv2rhosigma = 1;
+    	nv2sigma2 = 1;
     }
 
     madness::Tensor<double> result(3L, t[0].dims());
@@ -631,7 +602,8 @@ madness::Tensor<double> XCfunctional::fxc(const std::vector< madness::Tensor<dou
     for (long j=0; j<np; j++) 
     			res[j] = 0.0;
 
-    if(what ==4){
+    if(what ==99){
+// for debugging : return density
        for (long j=0; j<np; j++) {
   	     	res[j] = dens[j]*.5;
   	     	if (isnan_x(res[j])) throw "ouch";
@@ -642,12 +614,13 @@ madness::Tensor<double> XCfunctional::fxc(const std::vector< madness::Tensor<dou
        	switch(funcs[i].first->info->family) {
        	     case XC_FAMILY_LDA:
                 {
-                madness::Tensor<double> vrho(nvrho*np);
-    		double * restrict vr = vrho.ptr();
+                madness::Tensor<double> v2rho2(nv2rho2*np);
+    		double * restrict vr = v2rho2.ptr();
     		xc_lda_fxc(funcs[i].first, np, dens, vr);
-             	if (what < 2) {
+             	if (what < 3) {
+                   //fxc_lda : faa, fab, fbb
                      for (long j=0; j<np; j++) {
-    			     	res[j] += vr[nvrho*j+ispin]*funcs[i].second;
+    			     	res[j] += vr[nv2rho2*j+ispin]*funcs[i].second;
     			     	//res[j] += vr[nvrho*j+ispin]*funcs[i].second*dens[j];
     			     	//res[j] = vr[j];
     			     	//res[j] += vr[nvrho*j+ispin]*funcs[i].second;
@@ -660,18 +633,215 @@ madness::Tensor<double> XCfunctional::fxc(const std::vector< madness::Tensor<dou
 
              case XC_FAMILY_GGA:
     		{
+    	        madness::Tensor<double> v2rho2(nv2rho2*np);
+    	        madness::Tensor<double> v2rhosigma(nv2rhosigma*np);
+    	        madness::Tensor<double> v2sigma2(nv2sigma2*np);
+                double * restrict v2r2 = v2rho2.ptr();
+                double * restrict v2rs = v2rhosigma.ptr();
+                double * restrict v2s2 = v2sigma2.ptr();
+    	        const double * restrict sig = sigma.ptr();
+ //void xc_gga_fxc(xc_func_type *p, int np, double *rho, double *sigma, double *v2rho2, double *v2rhosigma, double *v2sigma2)
+	      	xc_gga_fxc(funcs[i].first, np, dens, sig, v2r2, v2rs, v2s2);
+	    	if (spin_polarized) {
+        		if (what == 0) {
+                        // V2rho2_aa 1 or V2rho2_bb
+        			for (long j=0; j<np; j++) {
+    					res[j] += v2r2[nv2rho2*j    ] * funcs[i].second;
+    					if (isnan_x(res[j])) throw "ouch";
+    				}
+    			}
+    			else if (what == 1) {
+    			// V2rho2_ab 2
+    				for (long j=0; j<np; j++) {
+    					res[j] += v2r2[nv2rho2*j + 1] * funcs[i].second;
+    					if (isnan_x(res[j])) throw "ouch";
+    				}
+    			}
+    			else if (what == 3) {
+    			// V2rho2_bb 3*
+    				for (long j=0; j<np; j++) {
+    					res[j] += v2r2[nv2rho2*j + 2] * funcs[i].second;
+    					if (isnan_x(res[j])) throw "ouch";
+    				}
+    			}
+    			else if (what == 4) {
+    			// V2rhosigma_a_aa 1
+    				for (long j=0; j<np; j++) {
+    					res[j] += v2rs[nv2rhosigma*j    ] * funcs[i].second;
+    					if (isnan_x(res[j])) throw "ouch";
+    				}
+    			}
+    			else if (what == 5) {
+    			// V2rhosigma_a_ab 2
+    				for (long j=0; j<np; j++) {
+    					res[j] += v2rs[nv2rhosigma*j + 1] * funcs[i].second;
+    					if (isnan_x(res[j])) throw "ouch";
+    				}
+    			}
+    			else if (what == 6) {
+    			// V2rhosigma_a_bb 3
+    				for (long j=0; j<np; j++) {
+    					res[j] += v2rs[nv2rhosigma*j + 2] * funcs[i].second;
+    					if (isnan_x(res[j])) throw "ouch";
+    				}
+    			}
+    			else if (what == 7) {
+    			// V2rhosigma_b_aa 4
+    				for (long j=0; j<np; j++) {
+    					res[j] += v2rs[nv2rhosigma*j + 3] * funcs[i].second;
+    					if (isnan_x(res[j])) throw "ouch";
+    				}
+    			}
+    			else if (what == 8) {
+    			// V2rhosigma_b_ab 5
+    				for (long j=0; j<np; j++) {
+    					res[j] += v2rs[nv2rhosigma*j + 4] * funcs[i].second;
+    					if (isnan_x(res[j])) throw "ouch";
+    				}
+    			}
+    			else if (what == 9) {
+    			// V2rhosigma_b_bb 6 **
+    				for (long j=0; j<np; j++) {
+    					res[j] += v2rs[nv2rhosigma*j + 5] * funcs[i].second;
+    					if (isnan_x(res[j])) throw "ouch";
+    				}
+    			}
+    			else if (what == 10) {
+    			// V2sigma2_aa_aa 1
+    				for (long j=0; j<np; j++) {
+    					res[j] += v2s2[nv2sigma2*j    ] * funcs[i].second;
+    					if (isnan_x(res[j])) throw "ouch";
+    				}
+    			}
+    			else if (what == 11) {
+    			// V2sigma2_aa_ab 2
+    				for (long j=0; j<np; j++) {
+    					res[j] += v2s2[nv2sigma2*j + 1] * funcs[i].second;
+    					if (isnan_x(res[j])) throw "ouch";
+    				}
+    			}
+    			else if (what == 12) {
+    			// V2sigma2_aa_bb 3
+    				for (long j=0; j<np; j++) {
+    					res[j] += v2s2[nv2sigma2*j + 2] * funcs[i].second;
+    					if (isnan_x(res[j])) throw "ouch";
+    				}
+    			}
+    			else if (what == 13) {
+    			// V2sigma2_ab_ab 4
+    				for (long j=0; j<np; j++) {
+    					res[j] += v2s2[nv2sigma2*j + 3] * funcs[i].second;
+    					if (isnan_x(res[j])) throw "ouch";
+    				}
+    			}
+    			else if (what == 14) {
+    			// V2sigma2_ab_bb 5
+    				for (long j=0; j<np; j++) {
+    					res[j] += v2s2[nv2sigma2*j + 4] * funcs[i].second;
+    					if (isnan_x(res[j])) throw "ouch";
+    				}
+    			}
+    			else if (what == 15) {
+    			// V2sigma2_bb_bb 6
+    				for (long j=0; j<np; j++) {
+    					res[j] += v2s2[nv2sigma2*j + 5] * funcs[i].second;
+    					if (isnan_x(res[j])) throw "ouch";
+    				}
+    			}
+    			else {
     				throw "ouch";
+    			}
+    		}
+    		else {
+        		if (what == 0) {
+                        // V2rho2_aa 1
+        			for (long j=0; j<np; j++) {
+    					res[j] += v2r2[nv2rho2*j] * funcs[i].second;
+    					if (isnan_x(res[j])) throw "ouch nan V2rho2_aa";
+    				}
+    			}
+    			else if (what == 1) {
+    			// V2rhosigma_a_aa 1
+    				for (long j=0; j<np; j++) {
+    					res[j] += v2rs[nv2rhosigma*j] * funcs[i].second;
+    					if (isnan_x(res[j])) throw "ouch nan V2rhosigma_a_aa";
+    				}
+    			}
+    			else if (what == 2) {
+    			// V2sigma2_aa_aa 1
+    				for (long j=0; j<np; j++) {
+    					res[j] += v2s2[nv2sigma2*j] * funcs[i].second;
+    					if (isnan_x(res[j])) throw "ouch nan V2sigma2_aa_aa";
+    				}
+    			}
+    		}
    		}
     		break;
          	case XC_FAMILY_HYB_GGA:
         	{
-       				throw "ouch";
+       				throw "ouch XC_FAMILY_HYB_GGA fxc disabled" ;
         	}
     	break;
     	default:
     	throw "UGH!";
     	}
     }
+    }
+    return result;
+}
+
+madness::Tensor<double> XCfunctional::kxc(const std::vector< madness::Tensor<double> >& t, const int ispin, const int what) const
+{
+    madness::Tensor<double> rho, sigma;
+    make_libxc_args(t, rho, sigma);
+
+    const int np = t[0].size();
+
+    int nv3rho3;
+    if (spin_polarized) {
+    	nv3rho3 = 4;
+    }
+    else {
+    	nv3rho3 = 1;
+    }
+
+    madness::Tensor<double> result(3L, t[0].dims());
+    double * restrict res = result.ptr();
+    const double * restrict dens = rho.ptr();
+    for (long j=0; j<np; j++) 
+   			res[j] = 0.0;
+
+    for (unsigned int i=0; i<funcs.size(); i++) {
+       	switch(funcs[i].first->info->family) {
+       	     case XC_FAMILY_LDA:
+                {
+                madness::Tensor<double> v3rho3(nv3rho3*np);
+    		double * restrict vr = v3rho3.ptr();
+    		xc_lda_kxc(funcs[i].first, np, dens, vr);
+             	if (what < 4) {
+                   //kxc_lda : kaa, kaab, kabb, kbbb
+                     for (long j=0; j<np; j++) {
+    			     	res[j] += vr[nv3rho3*j+ispin]*funcs[i].second;
+    			     	if (isnan_x(res[j])) throw "ouch";
+    			     }
+    			}
+    		}
+
+		break;
+
+             case XC_FAMILY_GGA:
+    		{
+       			throw "ouch XC_FAMILY_GGA kxc disabled" ;
+   		}
+    		break;
+         	case XC_FAMILY_HYB_GGA:
+        	{
+       			throw "ouch XC_FAMILY_HYB_GGA kxc disabled" ;
+        	}
+    	break;
+    	default:
+    	throw "UGH!";
+    	}
     }
     return result;
 }

@@ -12,7 +12,7 @@
 #include <algorithm>
 #include <utility>
 #include <madness/mra/key.h>
-#include <madness/world/world.h>
+#include <madness/world/parallel_runtime.h>
 
 #ifdef MADNESS_HAS_LIBXC
 #include <xc.h>
@@ -59,8 +59,8 @@ protected:
     /// \f[
     /// f(x,x_{\mathrm{min}},x_{\mathrm{max}}) = \left\{
     ///   \begin{array}{ll}
-    ///     x_{\mathrm{min}}                       & x < x_{\mathrm{min}}
-    ///     p(x,x_{\mathrm{min}},x_{\mathrm{max}}) & x_{\mathrm{min}} \leq x_{\mathrm{max}}
+    ///     x_{\mathrm{min}}                       & x < x_{\mathrm{min}} \\
+    ///     p(x,x_{\mathrm{min}},x_{\mathrm{max}}) & x_{\mathrm{min}} \leq x_{\mathrm{max}} \\
     ///     x                                      & x_{\mathrm{max}} < x
     ///   \end{array}
     /// \right.
@@ -116,8 +116,24 @@ private:
     }
 
     void munge2(double& rho, double& sigma) const {
-        if (rho < rhotol) rho=rhomin;
-        if (rho < rhotol || sigma < sigtol) sigma=sigmin;
+        // original thresholding
+      //  if (rho < rhotol) rho=rhomin;
+      //  if (rho < rhotol || sigma < sigtol) sigma=sigmin;
+        // no thresholding at all, just check to ensure rho and sigma don't go negative
+        /*if (rho < 0.0 || sigma < 0.0){
+           rho=rhomin;
+           sigma=sigmin;
+        }*/
+
+        // new 'ratio' threshold' - still need to ensure rho and sigma don't go negative
+        if ( (0.5 * log10(sigma) - 2) > log10(rho) || rho < 0.0 || sigma < 0.0){
+           //std::cout << "rho,sig " << rho << " " << sigma << " " << rhomin << " " << sigmin << std::endl;
+           rho=rhomin;
+           sigma=sigmin;
+        }
+        //else{
+        //    std::cout << "rho,sig " << rho << " " << sigma << std::endl;
+        //}
     }
 
     void munge5(double& rhoa, double& rhob, double& saa, double& sab, double& sbb) const {
@@ -243,6 +259,8 @@ public:
 
     madness::Tensor<double> fxc(const std::vector< madness::Tensor<double> >& t, const int ispin, const int what) const;
 
+    madness::Tensor<double> kxc(const std::vector< madness::Tensor<double> >& t, const int ispin, const int what) const;
+
     /// Crude function to plot the energy and potential functionals
     void plot() const {
         long npt = 1001;
@@ -300,12 +318,12 @@ struct xc_potential {
 };
 
 /// Class to compute terms of the kernel
-struct xc_kernel {
+struct xc_fxc {
     const XCfunctional* xc;
     const int what;
     const int ispin;
 
-    xc_kernel(const XCfunctional& xc, int ispin,int what)
+    xc_fxc(const XCfunctional& xc, int ispin,int what)
         : xc(&xc), what(what), ispin(ispin)
     {}
 
@@ -313,6 +331,23 @@ struct xc_kernel {
     {
         MADNESS_ASSERT(xc);
         madness::Tensor<double> r = xc->fxc(t, ispin, what);
+        return r;
+    }
+};
+
+struct xc_kxc {
+    const XCfunctional* xc;
+    const int what;
+    const int ispin;
+
+    xc_kxc(const XCfunctional& xc, int ispin,int what)
+        : xc(&xc), what(what), ispin(ispin)
+    {}
+
+    madness::Tensor<double> operator()(const madness::Key<3> & key, const std::vector< madness::Tensor<double> >& t) const
+    {
+        MADNESS_ASSERT(xc);
+        madness::Tensor<double> r = xc->kxc(t, ispin, what);
         return r;
     }
 };
