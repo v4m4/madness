@@ -4,17 +4,17 @@ include $(top_srcdir)/config/MakeGlobal.am
 lib_LIBRARIES = libMADworld.a
 
 thisincludedir = $(includedir)/madness/world
-thisinclude_HEADERS = archive.h print.h worldam.h worldfut.h worldmpi.h \
-	worldtask.h array.h worldgop.h worldobj.h bufar.h nodefaults.h \
-	typestuff.h enable_if.h worlddep.h worldhash.h worldref.h worldtypes.h \
-	dqueue.h parar.h vecar.h worldexc.h worldmem.h worldser.h worldthread.h \
-	worldrmi.h safempi.h worldpapi.h worldmutex.h print_seq.h worldhashmap.h \
-	worldrange.h atomicint.h posixmem.h worldptr.h deferred_cleanup.h world.h \
-	worldfwd.h uniqueid.h worldprofile.h worldtime.h binfsar.h mpiar.h textfsar.h \
-	worlddc.h mem_func_wrapper.h scopedptr.h worldtask.h taskfn.h \
-	shared_ptr.h shared_ptr_bits.h stdarray.h ref.h move.h group.h dist_cache.h dist_keys.h \
-	stdarray_bits.h type_traits.h type_traits_bits.h boost_checked_delete_bits.h \
-	function_traits_bits.h integral_constant.h stubmpi.h bgq_atomics.h binsorter.h
+thisinclude_HEADERS = archive.h print.h worldam.h future.h worldmpi.h \
+	world_task_queue.h array.h worldgop.h world_object.h bufar.h nodefaults.h \
+	enable_if.h worlddep.h worldhash.h worldref.h worldtypes.h \
+	dqueue.h parar.h vecar.h madness_exception.h worldmem.h worldser.h
+	worldthread.h worldrmi.h safempi.h worldpapi.h worldmutex.h print_seq.h \
+	worldhashmap.h worldrange.h atomicint.h posixmem.h worldptr.h \
+	deferred_cleanup.h parallel_runtime.h world.h uniqueid.h worldprofile.h \
+	timers.h binfsar.h mpiar.h textfsar.h worlddc.h mem_func_wrapper.h \
+	scopedptr.h taskfn.h ref.h move.h group.h dist_cache.h \
+	dist_keys.h type_traits.h boost_checked_delete_bits.h \
+	function_traits.h integral_constant.h stubmpi.h bgq_atomics.h binsorter.h
 
 
                       
@@ -24,7 +24,7 @@ TESTS = test_prof.mpi test_ar.mpi test_hashdc.mpi test_hello.mpi test_atomicint.
 
 
 if MADNESS_HAS_GOOGLE_TEST
-TESTS += test_googletest.mpi test_array.mpi test_worldptr.mpi test_worldref.mpi
+TESTS += test_array.mpi test_worldptr.mpi test_worldref.mpi
 XFAIL_TESTS =  test_googletest.mpi
 endif
 
@@ -96,10 +96,10 @@ test_array_mpi_CPPFLAGS = $(LIBGTEST_CPPFLAGS)
 test_array_mpi_CXXFLAGS = $(LIBGTEST_CXXFLAGS)
 test_array_mpi_LDADD = $(LIBGTEST_LIBS) $(LIBGTEST) libMADworld.a
 
-test_googletest_mpi_SOURCES = test_googletest.cc
-test_googletest_mpi_CPPFLAGS = $(LIBGTEST_CPPFLAGS)
-test_googletest_mpi_CXXFLAGS = $(LIBGTEST_CXXFLAGS)
-test_googletest_mpi_LDADD = $(LIBGTEST_LIBS) $(LIBGTEST) libMADworld.a
+#test_googletest_mpi_SOURCES = test_googletest.cc
+#test_googletest_mpi_CPPFLAGS = $(LIBGTEST_CPPFLAGS)
+#test_googletest_mpi_CXXFLAGS = $(LIBGTEST_CXXFLAGS)
+#test_googletest_mpi_LDADD = $(LIBGTEST_LIBS) $(LIBGTEST) libMADworld.a
 
 test_worldptr_mpi_SOURCES = test_worldptr.cc
 test_worldptr_mpi_CPPFLAGS = $(LIBGTEST_CPPFLAGS)
@@ -113,9 +113,10 @@ test_worldref_mpi_LDADD = $(LIBGTEST_LIBS) $(LIBGTEST) libMADworld.a
 
 endif
 
-libMADworld_a_SOURCES = world.cc redirectio.cc archive_type_names.cc \
+libMADworld_a_SOURCES = madness_exception.cc world.cc timers.cc future.cc \
+	redirectio.cc archive_type_names.cc \
 	debug.cc print.cc worldmem.cc worldrmi.cc safempi.cc worldpapi.cc \
-	worldref.cc worldam.cc worldprofile.cc worldthread.cc worldtask.cc \
+	worldref.cc worldam.cc worldprofile.cc worldthread.cc world_task_queue.cc \
 	worldgop.cc deferred_cleanup.cc worldmutex.cc binfsar.cc textfsar.cc \
     lookup3.c worldmpi.cc group.cc \
 	$(thisinclude_HEADERS)
