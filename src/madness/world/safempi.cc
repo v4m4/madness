@@ -27,17 +27,14 @@
   email: harrisonrj@ornl.gov
   tel:   865-241-3937
   fax:   865-572-0680
-
-  $Id$
 */
+
 #include <madness/world/safempi.h>
-#include <madness/world/worldexc.h>
+#include <madness/world/madness_exception.h>
 
 namespace SafeMPI {
 
-#ifdef MADNESS_SERIALIZES_MPI
     madness::SCALABLE_MUTEX_TYPE charon;
-#endif
 
     void Intracomm::binary_tree_info(int root, int& parent, int& child0, int& child1) {
         const int np = Get_size();
