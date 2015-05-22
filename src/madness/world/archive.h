@@ -68,7 +68,7 @@
   The \c & operator chains just like \c << for \c cout or \c >> for \c
   cin.  You may discover in \c archive.h other interfaces but you
   should \em not use them --- use the \& operator!  The lower level
-  interfaces will probably not, or only inconsistently incorpoate
+  interfaces will probably not, or only inconsistently incorporate
   type information and may even appear to work when they are not.
 
   Unless type checking has not been implemented by an archive for
@@ -420,10 +420,10 @@
 #include <cstdio>
 #include <vector>
 #include <map>
-#include <madness/world/typestuff.h>
 //#include <madness/world/worldprofile.h>
 #include <madness/world/enable_if.h>
-#include <madness/world/worldexc.h>
+#include <madness/world/type_traits.h>
+#include <madness/world/madness_exception.h>
 
 #define ARCHIVE_COOKIE "archive"
 #define ARCHIVE_MAJOR_VERSION 0
@@ -834,6 +834,30 @@ namespace madness {
         archive_array<unsigned char> wrap_opaque(const T& t) {
             return archive_array<unsigned char>((unsigned char*) &t,sizeof(t));
         }
+
+        /// Serialize function pointer
+        template <class Archive, typename resT, typename... paramT>
+        struct ArchiveSerializeImpl<Archive, resT(*)(paramT...)> {
+            static inline void serialize(const Archive& ar, resT(*fn)(paramT...)) {
+                ar & wrap_opaque(fn);
+            }
+        };
+
+        /// Serialize member function pointer
+        template <class Archive, typename resT, typename objT, typename... paramT>
+        struct ArchiveSerializeImpl<Archive, resT(objT::*)(paramT...)> {
+            static inline void serialize(const Archive& ar, resT(objT::*memfn)(paramT...)) {
+                ar & wrap_opaque(memfn);
+            }
+        };
+
+        /// Serialize const member function pointer
+        template <class Archive, typename resT, typename objT, typename... paramT>
+        struct ArchiveSerializeImpl<Archive, resT(objT::*)(paramT...) const> {
+            static inline void serialize(const Archive& ar, resT(objT::*memfn)(paramT...) const) {
+                ar & wrap_opaque(memfn);
+            }
+        };
 
         /// Partial specialization for archive_array
 

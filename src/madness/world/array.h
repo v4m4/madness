@@ -36,9 +36,9 @@
 #define MADNESS_WORLD_ARRAY_H__INCLUDED
 
 #include <madness/madness_config.h>
-#include <madness/world/worldexc.h>
+#include <madness/world/madness_exception.h>
 #include <madness/world/worldhash.h>
-#include <madness/world/stdarray.h>
+#include <array>
 #include <vector>
 #include <algorithm>
 #include <iostream>
@@ -217,11 +217,7 @@ namespace madness {
          // modifiers
          void swap(Vector<T, N>& other) { data_.swap(other.data_); }
          void fill(const T& t) {
-#ifdef MADNESS_ARRAY_HAS_FILL
              data_.fill(t);
- #else
-             data_.assign(t);
- #endif
          }
 
         /// In-place element-wise multiplcation by a scalar
