@@ -88,9 +88,15 @@
 
 */
 
+/**
+ \file worldrmi.h
+ \brief Lowest level API for sending active messages --- you should probably be looking at worldam.h instead.
+ \addtogroup parallel_runtime
+ */
+
 namespace madness {
 
-    // This is the generic low-level interface for a message handler
+    /// This is the generic low-level interface for a message handler
     typedef void (*rmi_handlerT)(void* buf, size_t nbyte);
 
     struct qmsg {
@@ -125,6 +131,8 @@ namespace madness {
                 : nmsg_sent(0), nbyte_sent(0), nmsg_recv(0), nbyte_recv(0) {}
     };
 
+
+    /// This class implements the communications server thread and provides the only send interface
     class RMI  {
         typedef uint16_t counterT;
         typedef uint32_t attrT;
@@ -139,7 +147,7 @@ namespace madness {
         static const attrT ATTR_UNORDERED=0x0;
         static const attrT ATTR_ORDERED=0x1;
 
-	static int testsome_backoff_us;
+        static int testsome_backoff_us;
 
     private:
 
@@ -192,6 +200,8 @@ namespace madness {
                 if(! finished) {
                    tbb::task::increment_ref_count();
                    tbb::task::recycle_as_safe_continuation();
+                } else {
+                    finished = false;
                 }
                 return NULL;
             }
@@ -199,6 +209,7 @@ namespace madness {
             void run() {
                 try {
                     while (! finished) process_some();
+                    finished = false;
                 } catch(...) {
                     delete this;
                     throw;
@@ -213,7 +224,8 @@ namespace madness {
 
                 // Set finished flag
                 finished = true;
-                myusleep(10000);
+                while(finished)
+                    myusleep(1000);
             }
 
             static void huge_msg_handler(void *buf, size_t nbytein);
@@ -235,11 +247,7 @@ namespace madness {
         static volatile bool debugging;    // True if debugging
 
         static const size_t DEFAULT_MAX_MSG_LEN = 3*512*1024;
-#ifdef HAVE_CRAYXT
-        static const int DEFAULT_NRECV=128;
-#else
-        static const int DEFAULT_NRECV=32;
-#endif
+        static const int DEFAULT_NRECV = 128;
 
         // Not allowed
         RMI(const RMI&);
@@ -259,6 +267,14 @@ namespace madness {
             return task_ptr->nrecv_;
         }
 
+        /// Send a remote method invocation (again you should probably be looking at worldam.h instead)
+
+        /// @param[in] buf Pointer to the data buffer (do not modify until send is completed)
+        /// @param[in] nbyte Size of the data in bytes
+        /// @param[in] dest Process to receive the message
+        /// @param[in] func The function to handle the message on the remote end
+        /// @param[in] attr Attributes of the message (ATTR_UNORDERED or ATTR_ORDERED)
+        /// @return The status as an RMI::Request that presently is a SafeMPI::Request
         static Request
         isend(const void* buf, size_t nbyte, ProcessID dest, rmi_handlerT func, unsigned int attr=ATTR_UNORDERED) {
             if(!task_ptr) {
@@ -271,16 +287,14 @@ namespace madness {
         }
 
         static void begin() {
-
-	  testsome_backoff_us = 5;
-	  const char* buf = getenv("MAD_BACKOFF_US");
-	  if (buf) {
-            std::stringstream ss(buf);
-            ss >> testsome_backoff_us;
-	    if (testsome_backoff_us < 0) testsome_backoff_us = 0;
-	    if (testsome_backoff_us > 100) testsome_backoff_us = 100;
-	  }	  
-
+            testsome_backoff_us = 5;
+            const char* buf = getenv("MAD_BACKOFF_US");
+            if (buf) {
+                std::stringstream ss(buf);
+                ss >> testsome_backoff_us;
+                if (testsome_backoff_us < 0) testsome_backoff_us = 0;
+                if (testsome_backoff_us > 100) testsome_backoff_us = 100;
+            }
 
             MADNESS_ASSERT(task_ptr == NULL);
 #if HAVE_INTEL_TBB

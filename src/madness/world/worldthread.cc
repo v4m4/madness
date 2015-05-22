@@ -27,8 +27,6 @@
   email: harrisonrj@ornl.gov
   tel:   865-241-3937
   fax:   865-572-0680
-
-  $Id $
 */
 
 /// \file worldthread.h
@@ -36,7 +34,7 @@
 
 #include <madness/world/worldthread.h>
 #include <madness/world/worldprofile.h>
-#include <madness/world/worldexc.h>
+#include <madness/world/madness_exception.h>
 #include <madness/world/print.h>
 #include <madness/world/worldpapi.h>
 #include <madness/world/safempi.h>
@@ -94,8 +92,8 @@ namespace madness {
 #endif
 #if defined(HAVE_IBMBGQ) and defined(HPM)
 	unsigned int slave_hpmctx; // HPM context for the slave threads
-	int pool_num = static_cast<ThreadBase*>(self)->pool_num; 
-	// int all_instrumented = static_cast<ThreadBase*>(self)->all_instrumented; 
+	int pool_num = static_cast<ThreadBase*>(self)->pool_num;
+	// int all_instrumented = static_cast<ThreadBase*>(self)->all_instrumented;
 	// int hpm_thread_id = static_cast<ThreadBase*>(self)->hpm_thread_id;
 	bool this_slave_instrumented;
 
@@ -144,9 +142,9 @@ namespace madness {
         end_papi_measurement();
 #endif
 
-#if defined(HAVE_IBMBGQ) and defined(HPM)	
+#if defined(HAVE_IBMBGQ) and defined(HPM)
 	if (this_slave_instrumented) HPM_Prof_stop(slave_hpmctx);
-#endif 
+#endif
         return 0;
     }
 
@@ -450,14 +448,17 @@ namespace madness {
             std::stringstream ss(mad_wait_timeout);
             ss >> await_timeout;
             if(await_timeout < 0.0) {
-                std::cout << "!!MADNESS WARNING: Invalid wait timeout.\n"
-                          << "!!MADNESS WARNING: MAD_WAIT_TIMEOUT = " << mad_wait_timeout << "\n";
+                if(SafeMPI::COMM_WORLD.Get_rank() == 0)
+                    std::cout << "!!MADNESS WARNING: Invalid wait timeout.\n"
+                              << "!!MADNESS WARNING: MAD_WAIT_TIMEOUT = " << mad_wait_timeout << "\n";
                 await_timeout = 900.0;
             }
-            if(await_timeout >= 1.0) {
-                std::cout << "MADNESS wait timeout set to " << await_timeout << " seconds.\n";
-            } else {
-                std::cout << "MADNESS wait timeout disabled.\n";
+            if(SafeMPI::COMM_WORLD.Get_rank() == 0) {
+                if(await_timeout >= 1.0) {
+                    std::cout << "MADNESS wait timeout set to " << await_timeout << " seconds.\n";
+                } else {
+                    std::cout << "MADNESS wait timeout disabled.\n";
+                }
             }
         }
 
