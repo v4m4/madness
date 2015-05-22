@@ -27,9 +27,8 @@
   email: harrisonrj@ornl.gov
   tel:   865-241-3937
   fax:   865-572-0680
-
-  $Id$
 */
+
 #ifndef MADNESS_MRA_FUNCDEFAULTS_H__INCLUDED
 #define MADNESS_MRA_FUNCDEFAULTS_H__INCLUDED
 
@@ -38,7 +37,7 @@
 /// \brief Provides FunctionDefaults and utilities for coordinate transformation
 /// \ingroup mrabcext
 
-#include <madness/world/world.h>
+#include <madness/world/parallel_runtime.h>
 #include <madness/world/array.h>
 #include <madness/world/worlddc.h>
 #include <madness/tensor/tensor.h>
@@ -269,7 +268,7 @@ namespace madness {
         /// Existing functions are unaffected
         static void set_truncate_mode(int value) {
             truncate_mode=value;
-            MADNESS_ASSERT(value>=0 && value<3);
+            MADNESS_ASSERT(value>=0 && value<4);
         }
 
         /// Gets the default adaptive refinement flag
