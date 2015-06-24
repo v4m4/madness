@@ -231,7 +231,13 @@ namespace madness {
                 n_core = molecule.n_core_orb_all();
             }
             
-            if(not param.no_orient)molecule.orient();
+            //if(not param.no_orient)molecule.orient();
+            if (param.no_orient){
+               molecule.center();
+            }
+            else {
+                 molecule.orient();
+            } 
 
             aobasis.read_file(param.aobasis);
             param.set_molecular_info(molecule, aobasis, n_core);
@@ -1853,21 +1859,24 @@ namespace madness {
 
         functionT vloc = dJ;
         //if (xc.is_dft() && !(xc.hf_exchange_coefficient()==1.0)) {
-        if (xc.is_dft()) {
+        if (xc.is_dft() && xc.hf_exchange_coefficient() !=1.0) {
 // ALDA approximation only
 // use kernel of ground state
             //XCfunctional xc_alda;
-            //std::string xc_data= "LDA ";
-            std::string xc_data= "LDA_X " + std::to_string(1.0-xc.hf_exchange_coefficient()) + " LDA_C_VWN 1. ";
-            xc.initialize(xc_data, !param.spin_restricted, world);
+            std::string xc_alda= "LDA";
+            // EXP std::string xc_data= "LDA_X " + std::to_string(1.0-xc.hf_exchange_coefficient()) + " LDA_C_VWN 1. ";
+            xc.initialize(xc_alda, !param.spin_restricted, world);
             functionT fxc = make_dft_fxc(world,  vf, spin, 0);//.truncate();
 
 // return to original xc
             xc.initialize(param.xc_data, !param.spin_restricted, world);
-//            fxc.scale(1.0-xc.hf_exchange_coefficient() );
-            vloc =  vloc +  fxc * drho;
+//  EXP          fxc.scale(1.0-xc.hf_exchange_coefficient() );
+            vloc =  dJ +  fxc * drho;
 // TODO openshell ?
         }
+        else { 
+            vloc =  dJ;
+        } 
         vecfuncT Vxcmo = mul_sparse(world, vloc, mo, vtol);
         truncate(world, Vxcmo);
 
@@ -1888,10 +1897,10 @@ namespace madness {
 // TODO becareful with drhos , drho
 // open shell drhoa !=drhob
 
-        vecfuncT dkxcmo = calc_xc_function( world, mo, vf, drho, spin);
+        vecfuncT dkxcmo = calc_xc_function(world, mo, vf, drho, spin);
          //TODO hybrdid functs: not sure if should i have to apply 
-        //if(xc.hf_exchange_coefficient()==1.0){
-        if(xc.hf_exchange_coefficient()){
+        if(xc.hf_exchange_coefficient() == 1.0){
+        //if(xc.hf_exchange_coefficient()){
             START_TIMER(world);
             for(int p=0; p<mo.size(); ++p) {
                 djkmo[p] = calc_exchange_function(world, p, dmo1, dmo2, mo,spin);
@@ -2211,7 +2220,9 @@ namespace madness {
         const double rconv = std::max(FunctionDefaults<3>::get_thresh(), param.rconv);
         int maxsub_save = param.maxsub;
 
-        for(int axis = 0; axis<3; ++axis) {
+        //for(int axis = 0; axis<3; ++axis) {
+        for ( int axis=0; axis<param.response_axis.size(); axis++) {
+            if(!param.response_axis[axis]) continue; 
         
             subspaceT subspace;
             tensorT Q;

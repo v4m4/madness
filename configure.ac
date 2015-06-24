@@ -1,7 +1,7 @@
 AC_PREREQ(2.59)
 # was 2.61 but jaguar is not up to date so backported which
 # involved replacing AC_PROG_SED and UINT*_T type checks.
-AC_INIT([MADNESS], [0.9], [http://code.google.com/p/m-a-d-n-e-s-s])
+AC_INIT([MADNESS], [0.9], [https://github.com/m-a-d-n-e-s-s/madness], , [https://github.com/m-a-d-n-e-s-s/madness])
 AC_CONFIG_SRCDIR([configure.ac])
 
 # This is where autoconf automatically generated files go
@@ -96,6 +96,9 @@ AC_LINK_IFELSE(
 AC_LANG_POP
   
 ACX_DETECT_CXX
+# Check for C++11 support, and
+# add the -std=c++11 or -std=c++0x flag to CXXFLAGS if necessary.
+AX_CXX_COMPILE_STDCXX_11([noext],[mandatory])
 
 # Set debugging
 ACX_ENABLE_DEBUGGING
@@ -106,18 +109,11 @@ ACX_ENABLE_OPTIMIZATION
 # Set warning flags by compiler vendor
 ACX_ENABLE_WARN
 
-# Look for user choice of language standard
-ACX_ENABLE_CPP0XTR1
-
 # Selelect best compilation flags
 ACX_ENABLE_OPTIMAL
 
-# Check for boost
-ACX_WITH_BOOST
-ACX_CHECK_TR1
-
 # Get optional external libraries inplace so that building will partially check them
-ACX_WITH_LIBUNWIND
+#ACX_WITH_LIBUNWIND ... no longer needed for google perf?
 ACX_WITH_GOOGLE_PERF
 ACX_WITH_GOOGLE_TEST
 ACX_WITH_LIBXC
@@ -163,9 +159,9 @@ AC_HEADER_TIME
 AC_HEADER_STDC
 AC_CHECK_HEADERS([limits.h stddef.h stdint.h stdlib.h string.h sys/param.h sys/time.h unistd.h])
 AC_CHECK_HEADERS([bits/atomicity.h ext/atomicity.h])
+# Check c++11 headers
+AC_CHECK_HEADERS([array type_traits tuple initializer_list])
 AC_HEADER_STDBOOL
-# No longer used
-#ACX_GNU_HASHMAP
 
 # Types
 AC_TYPE_PID_T
@@ -188,9 +184,6 @@ AC_FUNC_FORK
 #AC_FUNC_MALLOC
 AC_FUNC_ERROR_AT_LINE
 ACX_POSIX_MEMALIGN
-
-# Check for EIGEN3
-ACX_WITH_EIGEN3
 
 # Check for Elemental
 ACX_WITH_ELEMENTAL
@@ -359,10 +352,6 @@ AC_ARG_WITH([mpi-thread],
 AC_DEFINE_UNQUOTED([MADNESS_MPI_THREAD_LEVEL], [$MADNESS_MPI_THREAD_LEVEL], [Thread-safety level requested from MPI by MADNESS])
 AC_MSG_NOTICE([MPI thread-safety requested: $MADNESS_MPI_THREAD_LEVEL])
 
-# Stuff that either does not work or is ill-advised
-######AC_DEFINE([WORLD_TAU_TRACE],[1],[Enable tracing using tau])
-#####AC_DEFINE([WORLD_SCHED_BACKOFF],[1],[Yield during busy spin])
-
 # Display options
 AC_MSG_NOTICE([CPPFLAGS = $CPPFLAGS])
 AC_MSG_NOTICE([CFLAGS   = $CFLAGS])
@@ -377,6 +366,7 @@ AC_CONFIG_FILES([
     config/Makefile
     config/Makefile.sample
     config/MADNESS.pc
+    config/madness-config.cmake
     src/Makefile
       src/gtest/Makefile
       src/madness/Makefile
@@ -392,12 +382,8 @@ AC_CONFIG_FILES([
         src/apps/hf/Makefile
         src/apps/exciting/Makefile
         src/apps/moldft/Makefile
-        src/apps/polar/Makefile
         src/apps/nick/Makefile
-        src/apps/tkato/Makefile
-        src/apps/jacob/Makefile
         src/apps/interior_bc/Makefile
-        src/apps/interior_bc/nanophoto/Makefile
       src/examples/Makefile
     doc/Makefile
     doc/doxygen.cfg

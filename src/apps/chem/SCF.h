@@ -320,6 +320,7 @@ struct CalculationParameters {
 
     bool response;           ///< response function calculation
     double response_freq;       ///< Frequency for calculation response function
+    std::vector<bool> response_axis;  ///< Calculation protocol
     bool nonrotate;             ///< If true do not molcule orient
     double rconv;               ///< Response convergence
     double efield;                ///< eps for finite field
@@ -337,6 +338,7 @@ struct CalculationParameters {
         ar & gopt & gtol & gtest & gval & gprec & gmaxiter & algopt & tdksprop & nuclear_corrfac & psp_calc & pure_ae;
         ar & response;
         ar & response_freq;
+        ar & response_axis;
         ar & nonrotate;
         ar & rconv;
         ar & efield;
@@ -395,6 +397,7 @@ struct CalculationParameters {
         , pure_ae(true)
         , response(false)
         , response_freq(0.0)
+        , response_axis(madness::vector_factory(true, true, true))
         , nonrotate(false)
         , rconv(1e-6)
         , efield(0.0)
@@ -592,6 +595,14 @@ struct CalculationParameters {
               f >> freq;
                 response_freq = freq;
             }
+            else if (s == "response_axis") {
+                std::string buf;
+                std::getline(f,buf);
+                response_axis = std::vector<bool>();
+                bool d;
+                std::stringstream s(buf);
+                while (s >> d) response_axis.push_back(d);
+            }
             else if (s == "nonrotate") {
               nonrotate = true; 
             }
@@ -721,6 +732,7 @@ struct CalculationParameters {
         if (response){
             madness::print(" response frequency  ", response_freq);
             madness::print(" response convergence ", rconv);
+            madness::print(" response axis ", response_axis);
         }
         if (efield != 0.0){
               std::string axis;
